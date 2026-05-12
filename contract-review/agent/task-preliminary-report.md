@@ -85,5 +85,5 @@ created: "{CREATED_TIME}"
 ## 输出
 
 - output/preliminary-report.md（Markdown）
-- output/preliminary-report.docx（.docx 格式，使用 docx-cli generate 生成）
+- output/preliminary-report.html（HTML 格式，适合用户直接阅读）
 ```
