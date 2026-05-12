@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>合同审核系统 — 工作流程与架构</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card: #fff;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --amber: #d97706;
+    --amber-light: #fffbeb;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --purple: #7c3aed;
+    --purple-light: #f5f3ff;
+    --gray: #9ca3af;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif; background: var(--bg); color: var(--text); line-height:1.6; }
+  .container { max-width:1100px; margin:0 auto; padding:40px 24px; }
+
+  header { text-align:center; margin-bottom:48px; }
+  header h1 { font-size:2.2rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:8px; }
+  header p { color:var(--muted); font-size:1.05rem; }
+
+  h2 { font-size:1.4rem; font-weight:700; margin:40px 0 20px; padding-bottom:8px; border-bottom:2px solid var(--border); }
+  h3 { font-size:1.1rem; font-weight:600; margin:20px 0 12px; }
+
+  .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:24px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+
+  /* Flow diagram */
+  .flow { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:16px 0; }
+  .flow-node { padding:10px 16px; border-radius:8px; font-size:.9rem; font-weight:500; text-align:center; white-space:nowrap; }
+  .flow-node.start { background:var(--accent-light); color:var(--accent); border:1px solid var(--accent); }
+  .flow-node.decision { background:var(--amber-light); color:var(--amber); border:1px solid var(--amber); clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); padding:24px 20px; }
+  .flow-node.process { background:var(--purple-light); color:var(--purple); border:1px solid var(--purple); }
+  .flow-node.output { background:var(--green-light); color:var(--green); border:1px solid var(--green); }
+  .flow-node.review { background:var(--red-light); color:var(--red); border:1px solid var(--red); }
+  .flow-node.architect { background:var(--accent-light); color:var(--accent); border:1px solid var(--accent); border-style:dashed; }
+  .flow-arrow { color:var(--gray); font-size:1.2rem; flex-shrink:0; }
+
+  .flow-vertical { display:flex; flex-direction:column; align-items:center; gap:0; }
+  .flow-vertical .flow-node { margin:4px 0; }
+  .flow-vertical .flow-arrow { transform:rotate(90deg); margin:0; }
+
+  /* Phase boxes */
+  .phases { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px; }
+  .phase { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:20px; }
+  .phase-num { display:inline-block; width:28px; height:28px; border-radius:50%; text-align:center; line-height:28px; font-size:.8rem; font-weight:700; margin-right:8px; }
+  .phase-num.a { background:var(--accent-light); color:var(--accent); }
+  .phase-num.r { background:var(--red-light); color:var(--red); }
+  .phase-num.g { background:var(--green-light); color:var(--green); }
+  .phase-num.p { background:var(--purple-light); color:var(--purple); }
+  .phase h4 { font-size:.95rem; margin-bottom:8px; }
+  .phase p, .phase li { font-size:.85rem; color:var(--muted); }
+  .phase ul { padding-left:18px; }
+  .phase li { margin:4px 0; }
+
+  /* Architecture layers */
+  .layers { display:flex; flex-direction:column; gap:12px; }
+  .layer { display:flex; align-items:center; gap:16px; padding:16px 20px; border-radius:10px; }
+  .layer-icon { font-size:1.6rem; flex-shrink:0; width:48px; text-align:center; }
+  .layer-info h4 { font-size:.95rem; margin-bottom:2px; }
+  .layer-info p { font-size:.82rem; color:var(--muted); }
+  .layer.l1 { background:var(--accent-light); border:1px solid var(--accent); }
+  .layer.l2 { background:var(--purple-light); border:1px solid var(--purple); }
+  .layer.l3 { background:var(--green-light); border:1px solid var(--green); }
+
+  /* Table */
+  table { width:100%; border-collapse:collapse; font-size:.88rem; }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--bg); font-weight:600; color:var(--muted); font-size:.8rem; text-transform:uppercase; letter-spacing:.03em; }
+  td { color:var(--text); }
+
+  .badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:.75rem; font-weight:600; }
+  .badge.red { background:var(--red-light); color:var(--red); }
+  .badge.amber { background:var(--amber-light); color:var(--amber); }
+  .badge.green { background:var(--green-light); color:var(--green); }
+  .badge.blue { background:var(--accent-light); color:var(--accent); }
+  .badge.purple { background:var(--purple-light); color:var(--purple); }
+
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  @media (max-width:700px) { .two-col { grid-template-columns:1fr; } }
+
+  .decision-box { border:2px dashed var(--amber); background:var(--amber-light); border-radius:10px; padding:20px; margin:20px 0; text-align:center; }
+  .decision-box h4 { color:var(--amber); margin-bottom:6px; }
+  .decision-box p { font-size:.85rem; color:var(--muted); }
+
+  footer { text-align:center; color:var(--muted); font-size:.8rem; margin-top:60px; padding-top:20px; border-top:1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>合同审核系统</h1>
+  <p>基于 Claude Code 的 EPC 三层架构 · 自动区分简单/复杂模式 · 产出审核意见书 + 修订合同</p>
+</header>
+
+<!-- ========== ARCHITECTURE ========== -->
+<h2>核心架构</h2>
+<div class="layers">
+  <div class="layer l1">
+    <div class="layer-icon">&#x1F3D7;</div>
+    <div class="layer-info">
+      <h4>Architect（总承包）</h4>
+      <p>唯一用户入口。不做第一手法律分析。负责判断、规划、委托、信息蒸馏、验收。</p>
+    </div>
+  </div>
+  <div class="layer l2">
+    <div class="layer-icon">&#x1F477;</div>
+    <div class="layer-info">
+      <h4>Task Agent（分包商）</h4>
+      <p>按需创建的 sub-agent，执行单项任务后销毁。所有法律分析全部委托 Task Agent 执行。</p>
+    </div>
+  </div>
+  <div class="layer l3">
+    <div class="layer-icon">&#x1F6E0;</div>
+    <div class="layer-info">
+      <h4>Tools + Reviewer</h4>
+      <p>工具层为 Task Agent 提供信息获取和文件处理能力。Reviewer（仅复杂模式）逐条对照交付标准核查产出。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== BOOTSTRAP ========== -->
+<h2>Bootstrap 启动流程</h2>
+<div class="card">
+  <div class="flow" style="justify-content:center">
+    <div class="flow-node start">用户提交<br>.docx/.pdf</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node process">文件格式检查<br>拒绝 .doc</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node process">创建会话目录<br>cd 进入</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node process">mdconverter<br>→ contract.md</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node process">char-count.sh<br>字符数统计</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node architect">审核立场确认<br>暂停→用户确认</div>
+  </div>
+</div>
+
+<div class="decision-box">
+  <h4>&#x2696; 5000 字符阈值 &mdash; 纯机械判断</h4>
+  <p>≤5000 → 简单模式（无 Reviewer） &nbsp;&nbsp;|&nbsp;&nbsp; >5000 → 复杂模式（EPC 全机制）</p>
+</div>
+
+<!-- ========== SIMPLE MODE ========== -->
+<h2>简单模式（≤5000 字符）</h2>
+
+<div class="phases">
+  <div class="phase">
+    <span class="phase-num a">1</span><h4 style="display:inline">合同类型判断与规则匹配</h4>
+    <p>Architect 读取 contract.md → 判断合同类型 → 扫描 rules/ 目录匹配规则文件。无匹配则上报用户选择。</p>
+  </div>
+  <div class="phase">
+    <span class="phase-num p">2</span><h4 style="display:inline">审核 — 制定交付标准 + Audit Agent</h4>
+    <p>以规则文件为底本，根据合同实际内容和用户关切制定 delivery_standards。创建单个 Audit Task Agent（T-001），注入 yd-law + qcc，审查全合同。</p>
+  </div>
+  <div class="phase">
+    <span class="phase-num a">2</span><h4 style="display:inline">Architect 自行验收</h4>
+    <p>对照合同原文和 delivery_standards 逐项验收审核意见书。不通过则重建 T-001。</p>
+  </div>
+  <div class="phase">
+    <span class="phase-num r">3</span><h4 style="display:inline">修订 — Revision Agent</h4>
+    <p>创建 Revision Task Agent（T-002），注入 docx-cli 全命令。逐条执行审核意见书的修改建议。Architect 逐条核验修订内容。</p>
+  </div>
+  <div class="phase">
+    <span class="phase-num g">4</span><h4 style="display:inline">格式输出</h4>
+    <p>Format Task Agents 将审核意见书和修订合同 Markdown 转为 .docx。</p>
+  </div>
+  <div class="phase">
+    <span class="phase-num g">5</span><h4 style="display:inline">交付 + 对话续接</h4>
+    <p>交付两份 .docx。Architect 编制 agent/CLAUDE.md（上下文快照）和 agent/index.md（文件索引），用户此后可在 agent/ 下新开对话追问。</p>
+  </div>
+</div>
+
+<!-- ========== COMPLEX MODE ========== -->
+<h2>复杂模式（>5000 字符）</h2>
+
+<h3>阶段 1：初步设计</h3>
+<div class="card">
+  <div class="flow" style="justify-content:center;flex-wrap:wrap;">
+    <div class="flow-node process">T-S01<br>Structure Agent</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node review">Reviewer<br>Phase 1</div>
+    <div class="flow-arrow">→</div>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <div class="flow-node process" style="font-size:.8rem;">T-S02 Conditions</div>
+      <div class="flow-node process" style="font-size:.8rem;">T-S03 CrossRef</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node review">Reviewer<br>Phase 1</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node architect">Architect 编制<br>共享上下文 +<br>Reviewer Briefing<br>+ Work Plan</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node start">合同类型判断<br>规则匹配</div>
+  </div>
+  <p style="margin-top:12px;font-size:.85rem;color:var(--muted);text-align:center;">
+  T-S01 使用固定定义，直接注入 agent/task-structure.md。两遍处理，输出含结构索引表。Reviewer Phase 1 按索引表逐条搜索原文核查。
+  T-S02 和 T-S03 并行执行，依赖 T-S01 产出的条款编号体系。
+  </p>
+</div>
+
+<h3>阶段 2：详细审查</h3>
+<div class="card">
+  <div class="flow" style="justify-content:center;flex-wrap:wrap;">
+    <div class="flow-node architect">Architect<br>下达 task-spec</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node process">Audit Agent<br>T-001/T-002/...</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node review">Reviewer<br>Phase 2</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node architect">Architect<br>验收</div>
+  </div>
+  <p style="margin-top:12px;font-size:.85rem;color:var(--muted);text-align:center;">
+  多个 Audit Agent 分工审查不同条款范围。每个 Agent 注入 shared-context.md 确保一致性。
+  Reviewer 注入 Reviewer Briefing 获得单点实质性审查能力。循环上限 3 次。
+  </p>
+</div>
+
+<h3>阶段 3-7：汇编 → 修订 → 格式输出 → 交付 → 对话续接</h3>
+<div class="phases">
+  <div class="phase">
+    <span class="phase-num a">3</span><h4 style="display:inline">汇编审核意见书</h4>
+    <p>Assembly Agent（T-ASM-01）合并所有 Audit 产出。去重、统一格式、按条款顺序排列，附加执行摘要。</p>
+  </div>
+  <div class="phase">
+    <span class="phase-num r">4</span><h4 style="display:inline">修订合同</h4>
+    <p>Revision Agent（T-REV）注入 docx-cli 全命令，逐条执行修改。Reviewer Phase 2 审查 → Architect 验收。</p>
+  </div>
+  <div class="phase">
+    <span class="phase-num g">5</span><h4 style="display:inline">格式输出</h4>
+    <p>Format Task Agents 产出审核意见书 .docx 和修订合同 .docx。</p>
+  </div>
+  <div class="phase">
+    <span class="phase-num g">6</span><h4 style="display:inline">交付 + 对话续接</h4>
+    <p>交付两份 .docx。Architect 编制 agent/ 目录，用户此后可在 agent/ 下新开对话追问详情。</p>
+  </div>
+</div>
+
+<!-- ========== TOOLS ========== -->
+<h2>工具系统</h2>
+<table>
+<tr><th>Skill 名称</th><th>功能</th><th>调用者</th></tr>
+<tr><td><span class="badge blue">mdconverter</span></td><td>.docx/.pdf/图片 → Markdown。文本 PDF 用 pymupdf4llm，扫描版用 Dashscope 视觉 API，.docx 用 pandoc</td><td>Architect（bootstrap）</td></tr>
+<tr><td><span class="badge blue">docx-cli</span></td><td>python-docx CLI。create/read/paragraph/table/run/image/section/header-footer/properties/style</td><td>Task Agent（Revision/Format）</td></tr>
+<tr><td><span class="badge purple">yd-law</span></td><td>法律数据库检索。8 个 API：案例/法规/法条的关键词检索、语义检索、详情</td><td>Task Agent（Audit）</td></tr>
+<tr><td><span class="badge purple">qcc</span></td><td>企业工商信息查询。4 大类 67 个工具：企业信息、经营动态、知识产权、风险扫描</td><td>Task Agent（Audit）</td></tr>
+<tr><td><span class="badge green">char-count.sh</span></td><td>纯文本字符数统计，用于 5000 字符阈值判断</td><td>Architect（bootstrap）</td></tr>
+</table>
+
+<!-- ========== REVIEWER ========== -->
+<h2>Reviewer 双阶段审查（仅复杂模式）</h2>
+<div class="two-col">
+  <div class="card">
+    <h3>Phase 1 — 初设阶段</h3>
+    <p style="color:var(--muted);font-size:.85rem;">上下文：system prompt + 工作要求 + 交付物</p>
+    <ul style="font-size:.85rem;color:var(--muted);margin-top:8px;">
+      <li>格式是否正确</li>
+      <li>章节是否完整覆盖</li>
+      <li>条款编号是否与原文一致</li>
+      <li>数据引用是否可追溯</li>
+      <li>T-S01 特别：按索引表逐条搜索原文验证</li>
+    </ul>
+    <p style="font-size:.8rem;color:var(--amber);margin-top:8px;">仅形式审核，不做法律实质判断</p>
+  </div>
+  <div class="card">
+    <h3>Phase 2 — 详细审查阶段</h3>
+    <p style="color:var(--muted);font-size:.85rem;">上下文：+ shared-context + Reviewer Briefing</p>
+    <ul style="font-size:.85rem;color:var(--muted);margin-top:8px;">
+      <li>核验事实引用是否正确</li>
+      <li>核验条款引用关系是否与联系报告吻合</li>
+      <li>核验结论是否与合同结构明显矛盾</li>
+      <li>核验法条引用是否明显错误</li>
+    </ul>
+    <p style="font-size:.8rem;color:var(--amber);margin-top:8px;">单点实质性审查，3 轮上限</p>
+  </div>
+</div>
+
+<!-- ========== AGENT CONTINUITY ========== -->
+<h2>对话续接</h2>
+<div class="card">
+  <p style="margin-bottom:12px;">审查完成后，Architect 在会话目录下创建 <code>agent/</code> 目录。用户在新 Claude Code 实例中打开此目录，<code>CLAUDE.md</code> 自动加载，Agent 即刻进入对话状态。</p>
+  <div class="two-col">
+    <div>
+      <h4 style="font-size:.9rem;">agent/CLAUDE.md</h4>
+      <ul style="font-size:.82rem;color:var(--muted);">
+        <li>合同速览（类型、当事方、交易结构）</li>
+        <li>审查结论摘要（风险评级、核心发现）</li>
+        <li>修订概况</li>
+        <li>文件索引指引（所有产出位置）</li>
+        <li>常见追问导航（预判问题+应读文件）</li>
+        <li>Agent 自我认知（定位+边界）</li>
+      </ul>
+    </div>
+    <div>
+      <h4 style="font-size:.9rem;">agent/index.md</h4>
+      <ul style="font-size:.82rem;color:var(--muted);">
+        <li>按目录分组列出所有文件</li>
+        <li>每行：文件名、描述、产生者</li>
+        <li>Agent 据此了解项目全貌</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ========== KEY DECISIONS ========== -->
+<h2>关键设计决策</h2>
+<table>
+<tr><th>#</th><th>决策</th></tr>
+<tr><td>1</td><td>仅通过 <code>/contract-review</code> 命令触发，不做自动语义匹配</td></tr>
+<tr><td>2</td><td>不接受 .doc 格式，要求用户转换为 .docx 或 PDF</td></tr>
+<tr><td>3</td><td>5000 字符阈值纯机械判断，用 char-count.sh</td></tr>
+<tr><td>4</td><td>审核立场必须在 bootstrap 阶段向用户确认（代表方、审核目标、风险偏好）</td></tr>
+<tr><td>5</td><td>审核规则是 delivery_standards 的底本，不是成品。Architect 根据合同内容和用户关切调整</td></tr>
+<tr><td>6</td><td>所有 Agent 间通讯使用 Markdown + YAML frontmatter</td></tr>
+<tr><td>7</td><td>Architect 不做第一手法律分析，全部委托 Task Agent</td></tr>
+<tr><td>8</td><td>工具以 skill 形式存在，按需注入 sub-agent</td></tr>
+<tr><td>9</td><td>Reviewer 仅复杂模式启用，循环上限 3 次</td></tr>
+<tr><td>10</td><td>简单模式不启用 Reviewer，Architect 自行验收</td></tr>
+<tr><td>11</td><td>版本号在 frontmatter 中管理，不体现于文件名</td></tr>
+<tr><td>12</td><td>所有中间产物可追溯</td></tr>
+<tr><td>13</td><td>Structure Agent 使用固定定义，Architect 直接注入，输出含结构索引表；Reviewer 按索引表逐条搜索原文核查</td></tr>
+<tr><td>14</td><td>Reference 文件是参考示例，非强制模板</td></tr>
+</table>
+
+<!-- ========== SESSION STRUCTURE ========== -->
+<h2>会话目录结构</h2>
+<div class="card">
+<pre style="font-size:.8rem;color:var(--muted);line-height:1.8;">
+contract-review-{合同名}-{timestamp}/
+├── original/                        用户原始文件（只读）
+├── contract.md                       bootstrap 格式转化产物
+├── output/                          最终交付物
+│   ├── audit-opinion.docx           审核意见书
+│   └── {合同名}-revised.docx         修订后合同
+├── agent/                           对话续接入口
+│   ├── CLAUDE.md                    上下文快照
+│   └── index.md                     全部产物索引
+└── _internal/                       内部工作区
+    ├── architect-materials/         共享上下文、Reviewer简报、工作规划
+    ├── preliminary-design/          初设阶段产出（仅复杂模式）
+    └── task-records/                每个 Task Agent 一个子目录
+        └── T-XXX/
+            ├── task-spec.md         任务规格书
+            ├── output.md            Task Agent 产出
+            └── review-log.md        Reviewer 审查记录
+</pre>
+</div>
+
+<footer>
+  <p>合同审核 Skill · EPC 三层架构 · Claude Code</p>
+</footer>
+
+</div>
+</body>
+</html>

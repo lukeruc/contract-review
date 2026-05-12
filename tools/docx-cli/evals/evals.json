@@ -1,0 +1,23 @@
+{
+  "skill_name": "docx",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a .docx file at /tmp/test_read.docx. Read it and extract all the text content including any tables. Give me a complete summary of everything in it.",
+      "expected_output": "Agent reads the document using docx CLI, extracts paragraphs and tables, provides a clear summary of all content found.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Create a new .docx file at /tmp/test_create.docx for meeting notes. It should have: a title 'Meeting Notes' (use the Title style), a heading 'Attendees' (Heading 1 style), a list of 3 names (Alice, Bob, Carol) each on their own line, a heading 'Action Items' (Heading 1 style), and below that a 3-column table with header row 'Task,Owner,Deadline' and two data rows: 'Review proposal,Alice,2026-06-01' and 'Update docs,Bob,2026-05-15'.",
+      "expected_output": "A properly formatted .docx file with title, headings, attendee list, and action items table. File opens correctly in Word/WPS.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Take the file /tmp/test_modify.docx and make these changes: change the first paragraph text to 'Q4 Financial Report', center-align it and make it bold, and add a footer that says 'Confidential' to the document.",
+      "expected_output": "First paragraph updated with new text, centered and bold. Footer added with 'Confidential' text. File remains valid.",
+      "files": []
+    }
+  ]
+}
