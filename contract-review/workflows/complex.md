@@ -91,6 +91,28 @@ Architect 基于三份初设文档和简报，判断合同类型。扫描 `rules
 
 无匹配 → 暂停流程，向用户报告：列出合同特征和类型判断依据，请用户选择。等待指示后继续。
 
+### 1.5 初设后确认（根据用户选择）
+
+在 Bootstrap 阶段用户已选择初设完成后是否自动继续。此处按用户选择执行：
+
+**自动继续**：直接进入阶段 2（详细审查）。
+
+**等待确认**：暂停流程，向用户发送：
+
+```
+初步设计阶段已完成。产出：
+- 结构化合同文本（`_internal/preliminary-design/01-structured-contract.md`）
+- 主要合同条件报告（`_internal/preliminary-design/02-contract-conditions.md`）
+- 合同内联系报告（`_internal/preliminary-design/03-cross-references.md`）
+- 初步情况报告（`output/preliminary-report.md` + `output/preliminary-report.html`）
+
+合同类型判断：{合同类型}，匹配规则：{规则文件名 / 无匹配}。
+
+是否继续进入详细审查阶段？您可以调整审查重点或指定重点关注领域。
+```
+
+等待用户指示。用户可能回复"继续""重点关注XX条款""先不继续"等。收到指示后按用户要求调整（如有），进入阶段 2。
+
 ## 阶段 2：详细审查（Detailed Review）
 
 ### 2.1 创建审查 Task Agent
@@ -188,7 +210,7 @@ Reviewer 抽样检查：从该组输入中取每份文件的第 1 条、中间 1
 
 **注入工具**：`docx-cli` — `create`/`paragraph`/`table`/`run`/`read` 等全命令
 
-**注入文件**：`contract.md` + `T-ASM-01/output.md` + `shared-context.md`
+**注入文件**：`contract.md` + `T-ASM-01/output.md` + `shared-context.md`（含审核立场和修订人姓名）
 
 **审查**：Reviewer Phase 2 审查 → Architect 验收。
 

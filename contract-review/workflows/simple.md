@@ -79,7 +79,7 @@
 **注入文件**：
 - `contract.md`
 - `_internal/task-records/T-001/output.md`（审核意见书）
-- `_internal/architect-materials/shared-context.md`（审核立场和术语约定）
+- `_internal/architect-materials/shared-context.md`（审核立场、修订人姓名和术语约定）
 
 **任务规格书**：
 - 写入 `_internal/task-records/T-002/task-spec.md`

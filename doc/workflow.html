@@ -139,7 +139,7 @@
     <div class="flow-arrow">→</div>
     <div class="flow-node process">char-count.sh<br>字符数统计</div>
     <div class="flow-arrow">→</div>
-    <div class="flow-node architect">审核立场确认<br>暂停→用户确认</div>
+    <div class="flow-node architect">审核立场/修订人<br>初设后行为确认<br>暂停→用户确认</div>
   </div>
 </div>
 
@@ -161,7 +161,7 @@
   </div>
   <div class="phase">
     <span class="phase-num r">3</span><h4 style="display:inline">修订</h4>
-    <p>Revision Agent（T-002）注入 docx-cli 全命令，逐条执行修改建议，每处修订附批注。Architect 逐条核验。</p>
+    <p>Revision Agent（T-002）注入 docx-cli 全命令。修订人姓名由 shared-context.md 指定。逐条执行修改建议，每处修订附批注。Architect 逐条核验。</p>
   </div>
   <div class="phase">
     <span class="phase-num g">4</span><h4 style="display:inline">格式输出</h4>
@@ -204,6 +204,14 @@
   </p>
 </div>
 
+<h3>阶段 1.5：初设后确认（依用户选择）</h3>
+<div class="card">
+  <div class="decision-box">
+    <h4>暂停确认（默认）</h4>
+    <p>Bootstrap 阶段用户选择初设完成后是否自动继续。若选择"等待确认"，Architect 在此暂停，极简报告初设产出和合同类型判断结果，等待用户指示是否继续。若选择"自动继续"，跳过此步骤直接进入详细审查。</p>
+  </div>
+</div>
+
 <h3>阶段 2：详细审查</h3>
 <div class="card">
   <div class="flow" style="justify-content:center;flex-wrap:wrap;">
@@ -228,7 +236,7 @@
   </div>
   <div class="phase">
     <span class="phase-num r">4</span><h4 style="display:inline">修订</h4>
-    <p>Revision Agent（T-REV）注入 docx-cli。每处修订附批注。Reviewer Phase 2 审查 → Architect 验收。</p>
+    <p>Revision Agent（T-REV）注入 docx-cli。修订人姓名由 shared-context.md 指定。每处修订附批注。Reviewer Phase 2 审查 → Architect 验收。</p>
   </div>
   <div class="phase">
     <span class="phase-num g">5</span><h4 style="display:inline">格式输出</h4>
@@ -317,6 +325,8 @@
 <tr><td>12</td><td>Assembly 分层合并：≤10万字单次，>10万字分组并行+Reviewer抽样</td></tr>
 <tr><td>13</td><td>审核意见书交付 .md，修订合同 .docx 每处修订附批注</td></tr>
 <tr><td>14</td><td>Reference 文件是参考示例，非强制模板</td></tr>
+<tr><td>15</td><td>修订人姓名在 bootstrap 阶段确认，默认"审核方"，用于 Word 修订模式作者标注</td></tr>
+<tr><td>16</td><td>复杂模式初设后默认暂停等待用户确认（用户可在 bootstrap 阶段选择自动继续）</td></tr>
 </table>
 
 <!-- ========== SESSION STRUCTURE ========== -->
