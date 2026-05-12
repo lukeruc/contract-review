@@ -1,10 +1,10 @@
 # 简单模式工作流程
 
-当 `char-count.sh` 返回的字符数 ≤ 5000 时执行此流程。
+当用户在 Bootstrap 信息确认阶段选择简单模式时执行此流程。
 
 简单模式不启用 Reviewer。Architect 上下文充裕，自行验收即是最完整审查。
 
-> **前置条件**：bootstrap 步骤（创建会话目录、格式转化、字符数判断、审核立场确认）已在 SKILL.md Bootstrap 中完成。审核立场已确认并记录。
+> **前置条件**：bootstrap 步骤（创建会话目录、格式转化、获取字符数、信息确认）已在 SKILL.md Bootstrap 中完成。审核立场和修订设置已确认并记录于 `_internal/architect-materials/shared-context.md`。
 
 ## 阶段 1：合同类型判断与规则匹配
 

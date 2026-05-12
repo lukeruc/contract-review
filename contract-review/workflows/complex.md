@@ -1,10 +1,10 @@
 # 复杂模式工作流程
 
-当 `char-count.sh` 返回的字符数 > 5000 时执行此流程。
+当用户在 Bootstrap 信息确认阶段选择复杂模式时执行此流程。
 
 复杂模式启用 EPC 全机制：初设 Task Agent → Reviewer 审查 → Architect 编制管理物料 → 详细审查 Task Agent → Reviewer 审查 → 汇编 → 修订 → 格式输出。
 
-> **前置条件**：bootstrap 步骤（创建会话目录、格式转化、字符数判断、审核立场确认）已在 SKILL.md Bootstrap 中完成。审核立场已确认并记录于 `_internal/architect-materials/shared-context.md`。会话目录结构包含 `_internal/preliminary-design/` 子目录。
+> **前置条件**：bootstrap 步骤（创建会话目录、格式转化、获取字符数、信息确认）已在 SKILL.md Bootstrap 中完成。审核立场和修订设置已确认并记录于 `_internal/architect-materials/shared-context.md`。会话目录结构包含 `_internal/preliminary-design/` 子目录。
 
 ## 阶段 1：初步设计（Preliminary Design）
 

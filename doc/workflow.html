@@ -96,7 +96,7 @@
 
 <header>
   <h1>合同审核系统</h1>
-  <p>基于 Claude Code 的 EPC 三层架构 · 5000 字符自动区分简单/复杂模式 · 产出审核意见书 + 修订合同 + 审核工作报告</p>
+  <p>基于 Claude Code 的 EPC 三层架构 · 10000 字符建议阈值，用户选择简单/复杂模式 · 产出审核意见书 + 修订合同 + 审核工作报告</p>
 </header>
 
 <!-- ========== ARCHITECTURE ========== -->
@@ -144,12 +144,12 @@
 </div>
 
 <div class="decision-box">
-  <h4>&#x2696; 5000 字符阈值 &mdash; 纯机械判断</h4>
-  <p>≤5000 → 简单模式（无 Reviewer） &nbsp;&nbsp;|&nbsp;&nbsp; >5000 → 复杂模式（EPC 全机制）</p>
+  <h4>&#x2696; 10000 字符建议阈值 &mdash; 用户最终决定</h4>
+  <p>≤10000 建议简单模式 &nbsp;&nbsp;|&nbsp;&nbsp; >10000 建议复杂模式 &nbsp;&nbsp;|&nbsp;&nbsp; 用户可在信息确认步骤手动选择</p>
 </div>
 
 <!-- ========== SIMPLE MODE ========== -->
-<h2>简单模式（≤5000 字符）</h2>
+<h2>简单模式</h2>
 <div class="phases">
   <div class="phase">
     <span class="phase-num a">1</span><h4 style="display:inline">合同类型判断与规则匹配</h4>
@@ -178,7 +178,7 @@
 </div>
 
 <!-- ========== COMPLEX MODE ========== -->
-<h2>复杂模式（>5000 字符）</h2>
+<h2>复杂模式</h2>
 
 <h3>阶段 1：初步设计</h3>
 <div class="card">
@@ -313,7 +313,7 @@
 <tr><th>#</th><th>决策</th></tr>
 <tr><td>1</td><td>仅通过 <code>/contract-review</code> 命令触发</td></tr>
 <tr><td>2</td><td>不接受 .doc 格式</td></tr>
-<tr><td>3</td><td>5000 字符阈值纯机械判断（char-count.sh）</td></tr>
+<tr><td>3</td><td>10000 字符为建议阈值，用户最终决定简单/复杂模式（char-count.sh 获取字符数）</td></tr>
 <tr><td>4</td><td>审核立场在 bootstrap 阶段向用户确认</td></tr>
 <tr><td>5</td><td>审核规则是 delivery_standards 底本，Architect 根据合同内容和用户关切调整</td></tr>
 <tr><td>6</td><td>所有 Agent 间通讯使用 Markdown + YAML frontmatter</td></tr>
