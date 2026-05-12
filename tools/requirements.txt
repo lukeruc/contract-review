@@ -1,0 +1,15 @@
+# contract-review tools — Python dependencies
+# Install: pip install -r requirements.txt
+
+# docx-cli
+python-docx
+click
+
+# md-converter
+pymupdf4llm
+pymupdf
+dashscope
+python-dotenv
+
+# yd-law — no third-party packages (stdlib only)
+# qcc — not Python (standalone Node.js CLI)
