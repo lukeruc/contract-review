@@ -12,13 +12,17 @@
 
 **必须先跑**——T-S02 和 T-S03 依赖其条款编号体系。
 
-Structure 是所有复杂合同的共同步骤，任务内容恒定。使用固定定义，Architect 不自行撰写。
+**先运行 scan-structure.py 做预扫描**（跳过 Agent 第一遍通读）：
 
-**创建 T-S01**：读取 `agent/task-structure.md`，将其中的 System Prompt 直接注入 sub-agent，将 Task Spec 作为任务下达（替换 `{CREATED_TIME}` 为当前时间）。
+```bash
+python {SKILL_DIR}/scan-structure.py contract.md _internal/scan-result.json
+```
+
+然后创建 T-S01：读取 `agent/task-structure.md`，将其中的 System Prompt 直接注入 sub-agent，将 Task Spec 作为任务下达。
 
 **注入工具**：`docx-cli` — `read` 读取原文
 
-**注入文件**：`contract.md`
+**注入文件**：`contract.md` + `_internal/scan-result.json`
 
 **产出**：`_internal/preliminary-design/01-structured-contract.md`（含结构索引表）
 

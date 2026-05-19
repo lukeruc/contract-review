@@ -147,6 +147,12 @@ bash {SKILL_DIR}/char-count.sh contract.md
 
 `char-count.sh` 为本地脚本，位于本 skill 目录下，bootstrap 阶段直接执行。
 
+`scan-structure.py` 为本地脚本，复杂模式下在 T-S01 之前执行，机械提取合同编号体系。用法：
+
+```bash
+python {SKILL_DIR}/scan-structure.py contract.md _internal/scan-result.json
+```
+
 ## 工具注入参考
 
 创建 sub-agent 时按以下典型方案注入工具（可根据任务实际需要调整）：
