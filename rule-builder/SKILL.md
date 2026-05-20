@@ -70,7 +70,7 @@ python {SKILL_DIR}/scan-structure.py template.md _internal/scan-result.json
 
 然后创建 Structure Task Agent（sub-agent），将 `agent/task-structure.md` 中的 System Prompt 直接注入，将 Task Spec 作为任务下达。
 
-**注入工具**：`docx-cli` — `read`（读取原文核实）
+**注入工具**：`safe-docx` — `read`（读取原文核实）
 
 **注入文件**：`template.md` + `_internal/scan-result.json`
 
@@ -88,7 +88,7 @@ T-RB-S02 和 T-RB-S03 依赖 T-RB-S01 的条款编号体系作为定位基准，
 
 将 `agent/task-conditions.md` 中的 System Prompt 直接注入，Task Spec 作为任务下达。
 
-- **注入工具**：`docx-cli` — `read`（读取原文核实）
+- **注入工具**：`safe-docx` — `read`（读取原文核实）
 - **注入文件**：`template.md` + `_internal/template-structured.md`
 - **产出**：`_internal/template-conditions.md`
 - **定位**：提取模板中的**商业安排结构**——不是具体数字（模板里是变量），而是交易逻辑。付款如何分段、各段与什么节点挂钩、质保期从哪个事件起算、违约金是固定金额还是按日计算、终止权是否有前置条件。这些结构在模板中已经存在，不以具体数值是否填写为转移。
@@ -97,7 +97,7 @@ T-RB-S02 和 T-RB-S03 依赖 T-RB-S01 的条款编号体系作为定位基准，
 
 将 `agent/task-crossref.md` 中的 System Prompt 直接注入，Task Spec 作为任务下达。
 
-- **注入工具**：`docx-cli` — `read`（读取原文核实）
+- **注入工具**：`safe-docx` — `read`（读取原文核实）
 - **注入文件**：`template.md` + `_internal/template-structured.md`
 - **产出**：`_internal/template-crossref.md`
 - **定位**：分析条款间的引用、制约、补充关系，揭示起草方的**保护网设计**——哪些条款互相关联形成了对一方的系统性保护、引用链条的核心节点在哪。不侧重冲突检测（模板起草人已确保内部一致）。
@@ -108,7 +108,7 @@ T-RB-S02 和 T-RB-S03 依赖 T-RB-S01 的条款编号体系作为定位基准，
 
 创建 Question Generation Task Agent（T-RB-S04），将 `agent/task-question-gen.md` 中的 System Prompt 直接注入，将 Task Spec 作为任务下达。
 
-**注入工具**：`docx-cli` — `read`（通过索引定位后按需读取结构化全文）
+**注入工具**：无（结构化全文为 .md 文件，直接读取）
 
 **注入文件**：
 - `_internal/template-conditions.md` —— 商业安排结构报告
@@ -116,7 +116,7 @@ T-RB-S02 和 T-RB-S03 依赖 T-RB-S01 的条款编号体系作为定位基准，
 - `_internal/template-structured.md` 的结构索引表部分 —— 条款定位地图
 - 审核立场记录
 
-> 结构化全文（`_internal/template-structured.md`）保留在磁盘上，Agent 在需要核实某条款的具体措辞时，通过索引表定位后以 `docx-cli` 的 `read` 命令读取。不将全文注入上下文。
+> 结构化全文（`_internal/template-structured.md`）保留在磁盘上，Agent 在需要核实某条款的具体措辞时，通过索引表定位后直接读取该文件。不将全文注入上下文。
 
 **产出**：`output/checklist.md`
 
@@ -215,10 +215,10 @@ T-RB-S02 和 T-RB-S03 依赖 T-RB-S01 的条款编号体系作为定位基准，
 |--------|---------|
 | Bootstrap（步骤 3） | `md-converter` |
 | Bootstrap（阶段 1 预扫描） | `scan-structure.py`（本地脚本） |
-| Structure（T-RB-S01） | `docx-cli` — `read` |
-| Conditions（T-RB-S02） | `docx-cli` — `read` |
-| Cross-References（T-RB-S03） | `docx-cli` — `read` |
-| Question Generation（T-RB-S04） | `docx-cli` — `read`（按需读取结构化全文） |
+| Structure（T-RB-S01） | `safe-docx` — `read` |
+| Conditions（T-RB-S02） | `safe-docx` — `read` |
+| Cross-References（T-RB-S03） | `safe-docx` — `read` |
+| Question Generation（T-RB-S04） | 无工具（结构化全文为 .md 文件，直接读取） |
 | Rule Generation（T-RB-S05） | 无工具 |
 
 ## 固定 Agent 定义索引

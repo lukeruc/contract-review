@@ -71,7 +71,7 @@ skills/contract/
 │       ├── shared-context.schema.md
 │       └── reviewer-briefing.schema.md
 └── tools/                       # 工具 skill（各自独立安装）
-    ├── docx-cli/
+    ├── docx/             # safe-docx（Word 文档编辑）
     ├── md-converter/
     ├── yd-law/
     └── qcc/
@@ -101,7 +101,7 @@ skills/contract/
 | Skill 名称 | 功能 | 使用者 |
 |-----------|------|--------|
 | `mdconverter` | .docx/.pdf/图片 → Markdown。文本 PDF 用 pymupdf4llm，扫描版用 Dashscope 视觉 API，.docx 用 pandoc | Architect（bootstrap） |
-| `docx-cli` | python-docx CLI 封装。create/read/paragraph/table/run/image/section/header-footer/properties/style | Task Agent（Structure/Conditions/CrossRef/Revision/Format） |
+| `safe-docx` | Word 文档编辑。read/replace/comment/save --mode tracked | Task Agent（Structure/Conditions/CrossRef/Revision/Format） |
 | `yd-law` | 法律数据库检索。8 个 API：案例/法规/法条的关键词检索、语义检索、详情查询 | Task Agent（Audit） |
 | `qcc` | 企业工商信息查询。4 大类 67 个工具 | Task Agent（Audit） |
 

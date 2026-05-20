@@ -74,10 +74,10 @@
 
 阅读 `references/task-revision.md` 参考示例了解典型结构，然后自行撰写：
 
-**注入工具**：`docx-cli` — `create`/`paragraph`/`table`/`run`/`read` 等全命令
+**注入工具**：`safe-docx` — `read`/`replace`/`comment`/`save`。在原 docx 上用 `--and` 串联所有 replace + comment + save 到一个命令中（MCP session 不跨进程）。逐条替换文本（自动追踪修订），每处修订附批注。
 
 **注入文件**：
-- `contract.md`
+- `original/{原始文件名}`
 - `_internal/task-records/T-001/output.md`（审核意见书）
 - `_internal/architect-materials/shared-context.md`（审核立场、修订人姓名和术语约定）
 

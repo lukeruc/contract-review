@@ -37,7 +37,7 @@ contract-review/
 ├── schemas/                 # Agent 间通讯格式
 ├── rules/                   # 审核规则库（律师编写）
 ├── tools/                   # 工具 skill
-│   ├── docx-cli/            # python-docx CLI
+│   ├── docx/                 # safe-docx（Word 编辑）
 │   ├── md-converter/        # 文档转 Markdown
 │   ├── yd-law/              # 法律数据库检索
 │   └── qcc/                 # 企业工商查询
@@ -61,7 +61,7 @@ pip install -r tools/requirements.txt
 将 `tools/` 下的四个 skill 目录分别安装到 Claude Code：
 
 - `mdconverter` — 文档转 Markdown
-- `docx-cli` — python-docx CLI
+- `safe-docx` — Word 文档编辑（基于 MCP server）
 - `yd-law` — 法律检索（需设置 `YD_KEY` 环境变量）
 - `qcc` — 企业查询
 

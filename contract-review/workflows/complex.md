@@ -20,7 +20,7 @@ python {SKILL_DIR}/scan-structure.py contract.md _internal/scan-result.json
 
 然后创建 T-S01：读取 `agent/task-structure.md`，将其中的 System Prompt 直接注入 sub-agent，将 Task Spec 作为任务下达。
 
-**注入工具**：`docx-cli` — `read` 读取原文
+**注入工具**：`safe-docx` — `read` 读取原文
 
 **注入文件**：`contract.md` + `_internal/scan-result.json`
 
@@ -212,9 +212,9 @@ Reviewer 抽样检查：从该组输入中取每份文件的第 1 条、中间 1
 
 阅读 `references/task-revision.md` 参考示例，自行撰写：
 
-**注入工具**：`docx-cli` — `create`/`paragraph`/`table`/`run`/`read` 等全命令
+**注入工具**：`safe-docx` — `read`/`replace`/`comment`/`save`。在原 docx 上用 `--and` 串联所有 replace + comment + save 到一个命令中（MCP session 不跨进程）。逐条替换文本（自动追踪修订），每处修订附批注。
 
-**注入文件**：`contract.md` + `T-ASM-01/output.md` + `shared-context.md`（含审核立场和修订人姓名）
+**注入文件**：`original/{原始文件名}` + `T-ASM-01/output.md` + `shared-context.md`（含审核立场和修订人姓名）
 
 **审查**：Reviewer Phase 2 审查 → Architect 验收。
 
@@ -229,6 +229,7 @@ Reviewer 抽样检查：从该组输入中取每份文件的第 1 条、中间 1
 Format Task Agent（T-FMT-02），阅读 `references/task-format.md` 参考示例并自行撰写：
 - 输入：`T-REV/output.md` + `original/{原始文件名}`
 - 输出：`output/{原合同名}-revised.docx`
+- 工具：`pandoc`（从 Markdown 生成 docx，以原合同为 `--reference-doc` 继承样式）+ `safe-docx`（补充批注和最终保存）
 - **特别要求**：每处修订附一个批注，简短说明修改原因（1-2 句）。Revision Agent 的 task spec 中注明此要求。
 
 ## 阶段 6：交付

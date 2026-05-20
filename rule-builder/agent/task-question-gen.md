@@ -164,7 +164,7 @@ delivery_standards:
 
 - 商业条件结构报告提供模板的交易逻辑全局视图
 - 交叉引用分析报告提供起草方的保护网设计
-- 结构化模板全文在 `_internal/template-structured.md` 中——需要核实条款具体措辞时，通过 `docx-cli read` 命令按需读取。结构化文件头部的索引表可助你定位章节
+- 结构化模板全文在 `_internal/template-structured.md` 中——需要核实条款具体措辞时，直接读取该文件。文件头部的索引表可助你定位章节
 
 ## 清单格式
 

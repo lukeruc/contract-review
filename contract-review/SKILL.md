@@ -141,7 +141,7 @@ bash {SKILL_DIR}/char-count.sh contract.md
 | Skill 名称 | 用途 | 调用者 |
 |-----------|------|--------|
 | `mdconverter` | .docx/.pdf/图片 → Markdown | Architect（bootstrap 格式转化） |
-| `docx-cli` | python-docx CLI 封装 | Task Agent（Structure/Conditions/CrossRef/Revision/Format） |
+| `safe-docx` | Word 文档编辑（读/替换/批注/修订模式保存） | Task Agent（Structure/Conditions/CrossRef/Revision/Format） |
 | `yd-law` | 法律数据库检索 | Task Agent（Audit） |
 | `qcc` | 企业工商信息查询 | Task Agent（Audit） |
 
@@ -159,19 +159,19 @@ python {SKILL_DIR}/scan-structure.py contract.md _internal/scan-result.json
 
 | Task Agent 类型 | 注入工具及主要用法 |
 |-----------------|-------------------|
-| Structure（T-S01） | `docx-cli` — `read` 读取原文。固定定义，直接注入 `agent/task-structure.md` |
-| Conditions（T-S02） | `docx-cli` — `read` 读取原文 |
-| Cross-References（T-S03） | `docx-cli` — `read` 读取原文 |
+| Structure（T-S01） | `safe-docx` — `read` 读取原文。固定定义，直接注入 `agent/task-structure.md` |
+| Conditions（T-S02） | `safe-docx` — `read` 读取原文 |
+| Cross-References（T-S03） | `safe-docx` — `read` 读取原文 |
 | Audit（T-001 等） | `yd-law`（法律检索）、`qcc`（工商查询） |
-| Revision（T-002/T-REV） | `docx-cli` — `create`/`paragraph`/`table`/`run`/`read` 等全命令 |
+| Revision（T-002/T-REV） | `safe-docx` — `read` 获取段落 ID，然后在一个命令中用 `--and` 串联 `replace`+`comment`+`save --mode tracked`（MCP session 不跨进程） |
 | Assembly（T-ASM） | 无工具，纯 Markdown 文本合并。固定定义，直接注入 `agent/task-assembly.md` |
-| Preliminary Report（T-PR） | `docx-cli` — `create`/`paragraph`/`table`/`run`/`section`/`header-footer`（生成 .docx 版本） |
-| Format（T-FMT） | `docx-cli` — `create`/`paragraph`/`table`/`run`/`section`/`header-footer`（仅修订合同 .docx） |
+| Preliminary Report（T-PR） | 无工具，纯 Markdown 文本综合。固定定义，直接注入 `agent/task-preliminary-report.md` |
+| Format（T-FMT） | `safe-docx` — `comment`/`save`（批注与最终输出）；`pandoc`（从 Markdown 生成 docx，以原合同为 reference-doc） |
 
 | 调用者 | 注入工具 |
 |--------|---------|
-| Reviewer Phase 1 | `docx-cli` — `read`（抽查核验原文） |
-| Reviewer Phase 2 | `docx-cli` — `read`（抽查核验原文） |
+| Reviewer Phase 1 | `safe-docx` — `read`（抽查核验原文） |
+| Reviewer Phase 2 | `safe-docx` — `read`（抽查核验原文） |
 | Architect | `char-count`（bootstrap 阶段判断复杂度） |
 
 ## 合同类型判断与规则匹配
