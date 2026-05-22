@@ -1,61 +1,65 @@
-# 合同审核 Skill
+# Contract Review
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-基于 Claude Code 的智能合同审核系统。采用 EPC 三层架构，输入合同（.docx / .pdf），全自动产出**审核意见书**和**以修订模式标注修改的合同 .docx**。
+An AI-powered contract review system built on Claude Code. Submit a contract (.docx / .pdf), get a **written audit opinion** and a **redlined .docx with tracked changes and comments**.
 
-## 系统架构
+[中文文档](README_zh.md)
 
-```
-用户 → Architect（总承包）→ Task Agent（分包商）×N → 工具层
-                ↕
-           Reviewer（监理，仅复杂模式）
-```
+## Architecture
 
-| 角色 | 职责 |
-|------|------|
-| **Architect** | 唯一用户入口。不做第一手法律分析。负责判断、规划、委托、信息蒸馏、验收交付物 |
-| **Task Agent** | 按需创建的 sub-agent，执行单项任务后销毁 |
-| **Reviewer** | 仅复杂模式启用。独立 sub-agent，对照交付标准核查 Task Agent 产出，循环上限 3 次 |
-
-核心理念：Architect 不亲自做任何法律分析——所有读合同、检索法规、分析条款、撰写意见、修订文本均委托 Task Agent。
-
-## 模块
-
-| 模块 | 文件 | 功能 |
-|------|------|------|
-| **contract-review** | `contract-review/SKILL.md` | 合同审核主模块。通过 `/contract-review` 触发，产出审核意见书 + 修订合同 .docx |
-| **rule-builder** | `rule-builder/SKILL.md` | 审核规则生成器。通过 `/rule-builder` 触发，从企业合同模板通过问答式交互生成审核规则文件 |
-
-两者的关系：rule-builder 产出规则存入 `rules/` 目录，contract-review 加载规则执行审核。
-
-## 工作流程（contract-review）
+The system uses a three-layer delegation model inspired by general contracting:
 
 ```
-Bootstrap（格式转化 → 字符数 → 立场/模式确认）
+User → Architect → Task Agents × N → Tools
+            ↕
+       Reviewer (complex mode only)
+```
+
+| Role | Responsibility |
+|------|---------------|
+| **Architect** | Single user entry point. Never performs first-hand legal analysis. Judges, plans, delegates, distills, and signs off on deliverables |
+| **Task Agent** | Ephemeral sub-agent created per task, destroyed on completion. Does all the actual reading, analyzing, drafting, and editing |
+| **Reviewer** | Complex mode only. Independent sub-agent that checks Task Agent output against delivery standards. Up to 3 review cycles per agent |
+
+The core principle: the Architect delegates every substantive task — reading contracts, searching case law, analyzing clauses, drafting opinions, editing text — to Task Agents. The Architect only manages and judges.
+
+## Modules
+
+| Module | Entry | Purpose |
+|--------|-------|---------|
+| **contract-review** | `/contract-review` | The main module. Audits contracts and produces an audit opinion + redlined .docx |
+| **rule-builder** | `/rule-builder` | Generates audit rule files from corporate contract templates through Q&A interaction |
+
+Rule-builder produces rules stored in `rules/`; contract-review loads those rules to drive its audits.
+
+## Workflow (contract-review)
+
+```
+Bootstrap (convert format → character count → confirm stance/mode)
     │
-    ├── 简单模式（≤10000 字符建议，用户可选择切换）
-    │     1. 合同类型判断 + 规则匹配
-    │     2. Audit Agent 全合同审查
-    │     3. Translation Agent 将审核意见转为操作手册 (revisions.json)
-    │     4. Revision Agent 用 docx-mcp 执行修订
-    │     5. 交付（审核意见书 .md + 修订合同 .docx）
+    ├── Simple mode (≤10,000 chars suggested, user can override)
+    │     1. Contract type identification + rule matching
+    │     2. Audit Agent reviews entire contract
+    │     3. Translation Agent converts audit opinion → revisions.json (operation manual)
+    │     4. Revision Agent applies changes via docx-mcp (tracked changes + comments)
+    │     5. Deliver: audit-opinion.md + revised.docx
     │
-    └── 复杂模式（EPC 全机制）
-          阶段 1：初步设计（结构化 → 商业条件 → 交叉引用）
-          阶段 2：多 Audit Agent 并行详细审查 + Reviewer 质量审查
-          阶段 3：Assembly 汇编审核意见书
-          阶段 4：Translation Agent → Revision Agent (docx-mcp) 修订
-          阶段 5：格式输出 + 交付
+    └── Complex mode (full mechanism)
+          Phase 1: Preliminary design (structure → commercial conditions → cross-references)
+          Phase 2: Multiple Audit Agents in parallel + Reviewer quality checks
+          Phase 3: Assembly — merge audit outputs into a single opinion
+          Phase 4: Translation Agent → Revision Agent (docx-mcp)
+          Phase 5: Format + deliver
 ```
 
-## 安装
+## Installation
 
-### 前提条件
+### Prerequisites
 
-- **Claude Code**（Claude Code CLI 或 IDE 扩展）
+- **Claude Code** (CLI or IDE extension)
 - **Python 3.12+**
-- **pandoc**（用于 .docx → Markdown 转换）
+- **pandoc** (for .docx → Markdown conversion)
 
 ```bash
 # macOS
@@ -68,28 +72,28 @@ sudo apt install pandoc
 winget install pandoc
 ```
 
-### 第一步：克隆项目
+### Step 1: Clone
 
 ```bash
 git clone https://github.com/lukeruc/contract-review.git
 cd contract-review
 ```
 
-### 第二步：安装 Python 依赖
+### Step 2: Python dependencies
 
 ```bash
 pip install -r tools/requirements.txt
 ```
 
-### 第三步：安装 docx-mcp MCP 服务器
+### Step 3: Install docx-mcp MCP server
 
-docx-mcp 是修订阶段的 MCP 服务器，负责 Word 文档的修订标记、批注、段落插入。**必须安装。**
+docx-mcp handles Word document editing with tracked changes, comments, and paragraph insertion. **Required.**
 
 ```bash
 claude mcp add docx-mcp -- uvx docx-mcp-server
 ```
 
-如果项目里没有这个命令，手动加入 Claude Code 的 MCP 配置文件（`~/.claude/settings.json`）：
+If the `claude mcp` command is unavailable, manually add to your Claude Code MCP config (`~/.claude/settings.json`):
 
 ```json
 {
@@ -102,91 +106,86 @@ claude mcp add docx-mcp -- uvx docx-mcp-server
 }
 ```
 
-> 安装后，Claude Code 中会自动出现一个 `docx-mcp` skill，提供使用指引。
+A `docx-mcp` skill auto-installs on first server start, providing usage guidance.
 
-### 第四步：安装工具 Skill
+### Step 4: Install tool skills
 
-将 `tools/` 下的三个 skill 安装为 Claude Code skill：
+Install the three helper skills from `tools/`:
 
-#### mdconverter（文档转 Markdown）
+#### mdconverter (document → Markdown)
 
 ```bash
 claude skill add mdconverter --path tools/md-converter
-# 或手动：将 tools/md-converter/ 复制到 ~/.claude/skills/mdconverter/
+# Or manually: copy tools/md-converter/ to ~/.claude/skills/mdconverter/
 ```
 
-> 扫描版 PDF 需要 Dashscope API key。设置环境变量：`export DASHSCOPE_API_KEY=your-key`
+> Scanned PDFs require a Dashscope API key. Set `DASHSCOPE_API_KEY`.
 
-#### yd-law（法律数据库检索）
+#### yd-law (legal database search)
 
 ```bash
 claude skill add yd-law --path tools/yd-law
 ```
 
-> 需要 YD 法律数据 API key。设置环境变量：`export YD_KEY=your-key`
+> Requires a YD Law API key. Set `YD_KEY`. Skip this if you don't need case law search — the system will still work using contract logic and audit rules alone.
 
-如果不使用法律检索功能，此 skill 可以跳过——合同审核将仅基于审核规则和合同自身逻辑进行分析。
-
-#### qcc（企业工商信息查询）
+#### qcc (company registry lookup)
 
 ```bash
 claude skill add qcc --path tools/qcc
 ```
 
-> 需要 QCC API key。设置环境变量：`export QCC_KEY=your-key`
+> Requires a QCC API key. Set `QCC_KEY`. Skip if company lookups aren't needed.
 
-如果不使用企业查询功能，此 skill 可以跳过。
-
-### 第五步：安装入口 Skill
+### Step 5: Install entry skills
 
 ```bash
-# 主模块：合同审核
+# Main module: contract review
 claude skill add contract-review --path contract-review
 
-# 规则生成器（可选）
+# Rule builder (optional)
 claude skill add rule-builder --path rule-builder
 ```
 
-### 第六步：验证安装
+### Step 6: Verify
 
-在 Claude Code 中输入 `/contract-review`，系统应提示你上传合同文件。如果没有反应，检查：
+In Claude Code, type `/contract-review`. It should prompt you to upload a contract file. If nothing happens:
 
-1. skill 是否在正确路径：`ls ~/.claude/skills/contract-review/SKILL.md`
-2. MCP 服务器是否运行：`claude mcp list` 应包含 `docx-mcp`
-3. pandoc 是否可用：`pandoc --version`
-4. Python 依赖是否完整：`python -c "import docx, lxml, pymupdf4llm"`
+1. Check skill path: `ls ~/.claude/skills/contract-review/SKILL.md`
+2. Check MCP server: `claude mcp list` should include `docx-mcp`
+3. Check pandoc: `pandoc --version`
+4. Check Python deps: `python -c "import docx, lxml, pymupdf4llm"`
 
-## 项目结构
+## Directory Structure
 
 ```
 contract-review/
-├── SKILL.md                      # 合同审核 skill 入口
-├── scripts/                      # 本地脚本（Architect 执行）
-│   ├── char-count.sh             # 纯文本字符数统计
-│   ├── scan-structure.py         # 编号体系机械扫描（中英文）
-│   └── add-paraids.py            # 为 .docx 添加 w14:paraId 属性
-├── agent/                        # 固定 Agent 定义（强制模板）
-│   ├── task-structure.md         # T-S01 结构化
-│   ├── task-preliminary-report.md# T-PR 初步情况报告
-│   └── task-assembly.md          # T-ASM 审核意见汇编
-├── workflows/                    # 流程定义
-│   ├── simple.md                 # 简单模式
-│   └── complex.md                # 复杂模式（EPC 全机制）
-├── rules/                        # 审核规则库（律师编写）
+├── SKILL.md                      # Contract review skill entry
+├── scripts/                      # Local scripts (run by Architect)
+│   ├── char-count.sh             # Character count
+│   ├── scan-structure.py         # Clause numbering scanner (Chinese/English)
+│   └── add-paraids.py            # Add w14:paraId attributes for docx-mcp
+├── agent/                        # Fixed Agent definitions (mandatory templates)
+│   ├── task-structure.md         # T-S01: structural analysis
+│   ├── task-preliminary-report.md# T-PR: preliminary report
+│   └── task-assembly.md          # T-ASM: merge audit outputs
+├── workflows/                    # Process definitions
+│   ├── simple.md                 # Simple mode
+│   └── complex.md                # Complex mode (full mechanism)
+├── rules/                        # Audit rule library (written by lawyers)
 │   ├── construction-contract.md
-│   ├── engineering-procurement-bangladesh-buyer.md
 │   └── nda.md
-├── references/                   # 各 Agent 类型参考示例
-├── schemas/                      # Agent 间通讯格式定义
-├── tools/                        # 外部工具 skill
+├── references/                   # Reference examples per agent type
+├── schemas/                      # Inter-agent communication formats
+├── tools/                        # External tool skills
 │   ├── md-converter/
 │   ├── yd-law/
 │   └── qcc/
-├── docs/                          # 设计文档
-│   ├── DESIGN.md                 # 概念设计
-│   ├── TECHNICAL-DESIGN.md       # 技术设计
-│   └── RULE-BUILDER-DESIGN.md    # Rule-builder 设计
-├── rule-builder/                 # 规则生成 skill（独立）
+├── docs/                         # Design documentation
+│   ├── DESIGN.md                 # Conceptual design
+│   ├── TECHNICAL-DESIGN.md       # Technical design
+│   └── RULE-BUILDER-DESIGN.md    # Rule-builder design
+├── rule-builder/                 # Rule builder skill (standalone)
 │   ├── SKILL.md
 │   ├── scripts/scan-structure.py
 │   └── agent/
@@ -194,51 +193,51 @@ contract-review/
 └── README.md
 ```
 
-## 环境变量
+## Environment Variables
 
-| 变量 | 用途 | 必需？ |
-|------|------|--------|
-| `DASHSCOPE_API_KEY` | 扫描版 PDF / 图片 OCR（mdconverter） | 仅处理扫描件时需要 |
-| `YD_KEY` | 法律数据库检索 API（yd-law） | 可选，不用则不设 |
-| `QCC_KEY` | 企业工商信息查询 API（qcc） | 可选，不用则不设 |
+| Variable | Purpose | Required? |
+|----------|---------|-----------|
+| `DASHSCOPE_API_KEY` | Scanned PDF / image OCR (mdconverter) | Only for scanned documents |
+| `YD_KEY` | Legal database search API (yd-law) | Optional |
+| `QCC_KEY` | Company registry lookup API (qcc) | Optional |
 
-不使用外部 API 时，合同审核仍可基于审核规则和合同自身的逻辑分析进行——法律检索和企业查询是增强功能，非必需。
+The system works without external APIs — legal search and company lookup are enhancements, not requirements.
 
-## API 获取
+## API Access
 
-- **Dashscope**：https://dashscope.aliyun.com/ — 阿里云灵积模型服务，开通"文字识别"能力
-- **YD Law**：https://open.chineselaw.com/ — 法律数据 API
-- **QCC**：https://www.qcc.com/ — 企业信息查询平台
+- **Dashscope**: https://dashscope.aliyun.com/ — Alibaba Cloud model service, enable "OCR" capability
+- **YD Law**: https://open.chineselaw.com/ — Chinese legal database API
+- **QCC**: https://www.qcc.com/ — Chinese company information platform
 
-## 常见问题
+## FAQ
 
-**Q: 启动 `/contract-review` 后提示 "不支持 .doc 格式"**
+**Q: `/contract-review` says ".doc format not supported"**
 
-.doc 是旧版二进制格式。用 Word 或 WPS 将文件另存为 .docx 后重新提交。
+.doc is the legacy binary format. Use Word or WPS to save as .docx and resubmit.
 
-**Q: 修订合同打不开，Office 报错**
+**Q: The revised .docx won't open in Office**
 
-通常是 docx-mcp 未正确安装。检查 `claude mcp list` 是否包含 `docx-mcp`。
+Usually means docx-mcp isn't installed correctly. Run `claude mcp list` and verify `docx-mcp` appears.
 
-**Q: 修订完成后段落找不到、提示 "paragraph not found"**
+**Q: Revision agent can't find paragraphs**
 
-你的 .docx 文件缺少 `w14:paraId` 属性（旧版 Word 保存的文档常见问题）。系统会自动用 `add-paraids.py` 预处理，不需要你手动操作。
+Your .docx likely lacks `w14:paraId` attributes (common with older Word versions). The system auto-runs `add-paraids.py` to fix this — no manual action needed.
 
-**Q: 审核结果不准确**
+**Q: Audit results seem off**
 
-审核质量依赖于 `rules/` 目录下的规则文件质量。规则文件由专业律师编写和维护。如果遇到不准确的审核结果，可以：
-- 检查匹配的规则文件是否覆盖了你的合同类型
-- 使用 `/rule-builder` 从你的合同模板生成专属规则
-- 在复杂模式下利用初设后暂停机制，指定重点审查领域
+Audit quality depends on rule files in `rules/`. Rules are written and maintained by lawyers. To improve results:
+- Check whether a matching rule file exists for your contract type
+- Use `/rule-builder` to generate custom rules from your own templates
+- In complex mode, use the post-preliminary-design pause to specify review priorities
 
-**Q: 可以只安装合同审核、不安装规则生成器吗？**
+**Q: Can I install just contract review without the rule builder?**
 
-可以。规则生成器 (`rule-builder/`) 是独立模块，不安装不影响合同审核功能。
+Yes. The rule builder (`rule-builder/`) is standalone — contract review works fine without it.
 
-## 贡献
+## Contributing
 
-欢迎提交 Issue 和 Pull Request。规则文件 (`rules/`) 尤其欢迎律师贡献。
+Issues and pull requests welcome. Rule contributions (`rules/`) from lawyers are especially appreciated.
 
 ## License
 
-MIT — 详见 [LICENSE](LICENSE)
+MIT — see [LICENSE](LICENSE)
