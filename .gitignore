@@ -14,3 +14,9 @@ __pycache__/
 .vscode/
 *.swp
 *.swo
+
+# Doc — only design files are versioned
+doc/*
+!doc/DESIGN.md
+!doc/TECHNICAL-DESIGN.md
+!doc/RULE-BUILDER-DESIGN.md

@@ -30,14 +30,16 @@
 ```
 contract-review/
 ├── SKILL.md                 # 入口 skill
-├── char-count.sh            # 字符数统计脚本
+├── scripts/                 # 本地脚本
+│   ├── char-count.sh        # 字符数统计
+│   ├── scan-structure.py    # 编号体系预扫描
+│   └── revise.py            # 修订 .docx 生成
 ├── agent/                   # 固定 Agent 定义（强制模板）
 ├── workflows/               # 流程定义
 ├── references/              # 参考示例
 ├── schemas/                 # Agent 间通讯格式
 ├── rules/                   # 审核规则库（律师编写）
 ├── tools/                   # 工具 skill
-│   ├── docx/                 # safe-docx（Word 编辑）
 │   ├── md-converter/        # 文档转 Markdown
 │   ├── yd-law/              # 法律数据库检索
 │   └── qcc/                 # 企业工商查询
@@ -58,10 +60,9 @@ pip install -r tools/requirements.txt
 
 ### 2. 安装工具 skill
 
-将 `tools/` 下的四个 skill 目录分别安装到 Claude Code：
+将 `tools/` 下的三个 skill 目录分别安装到 Claude Code：
 
 - `mdconverter` — 文档转 Markdown
-- `safe-docx` — Word 文档编辑（基于 MCP server）
 - `yd-law` — 法律检索（需设置 `YD_KEY` 环境变量）
 - `qcc` — 企业查询
 
@@ -71,7 +72,7 @@ pip install -r tools/requirements.txt
 
 ### 4. 环境要求
 
-- Python 3.12+（pymupdf4llm, dashscope, python-docx, click）
+- Python 3.12+（pymupdf4llm, dashscope, python-docx, lxml）
 - pandoc（.docx 转换）
 - Dashscope API key（扫描版 PDF 和图片识别）
 - YD 法律数据 API key

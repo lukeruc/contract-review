@@ -1,9 +1,9 @@
 # contract-review tools — Python dependencies
 # Install: pip install -r requirements.txt
 
-# docx-cli
+# revise.py (contract-review/scripts/)
 python-docx
-click
+lxml
 
 # md-converter
 pymupdf4llm

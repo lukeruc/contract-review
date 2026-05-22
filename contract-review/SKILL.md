@@ -50,10 +50,10 @@ cd "${SESSION_DIR}"
 
 ### 4. 获取字符数
 
-运行本 skill 目录下的 `char-count.sh` 获取纯文本字符数：
+运行本 skill 目录的 `scripts/char-count.sh` 获取纯文本字符数：
 
 ```bash
-bash {SKILL_DIR}/char-count.sh contract.md
+bash {SKILL_DIR}/scripts/char-count.sh contract.md
 ```
 
 记录结果（如 8234），后续步骤用做模式建议的依据。**不做分支决策**——模式由用户在下一步确认。
@@ -136,22 +136,26 @@ bash {SKILL_DIR}/char-count.sh contract.md
 
 ## 工具清单
 
-以下工具均已安装为独立 Claude Code skill，通过 Skill 工具按 skill 名称调用。Bootstrap 阶段 Architect 使用的工具见流程说明。
+### 外部 Skill
 
 | Skill 名称 | 用途 | 调用者 |
 |-----------|------|--------|
 | `mdconverter` | .docx/.pdf/图片 → Markdown | Architect（bootstrap 格式转化） |
-| `safe-docx` | Word 文档编辑（读/替换/批注/修订模式保存） | Task Agent（Structure/Conditions/CrossRef/Revision/Format） |
+| `docx-mcp` | Word 文档编辑（MCP 原生，支持修订标记、批注、段落插入）。**要求文档有 `w14:paraId` 属性** | Revision Agent（修订阶段） |
 | `yd-law` | 法律数据库检索 | Task Agent（Audit） |
 | `qcc` | 企业工商信息查询 | Task Agent（Audit） |
 
-`char-count.sh` 为本地脚本，位于本 skill 目录下，bootstrap 阶段直接执行。
+### 本地脚本
 
-`scan-structure.py` 为本地脚本，复杂模式下在 T-S01 之前执行，机械提取合同编号体系。用法：
+位于 `scripts/` 目录下，由 Architect 直接执行：
 
-```bash
-python {SKILL_DIR}/scan-structure.py contract.md _internal/scan-result.json
-```
+| 脚本 | 用途 | 用法 |
+|------|------|------|
+| `char-count.sh` | 纯文本字符数统计 | `bash {SKILL_DIR}/scripts/char-count.sh contract.md` |
+| `scan-structure.py` | 中英文合同编号体系机械扫描，输出 JSON | `python {SKILL_DIR}/scripts/scan-structure.py contract.md _internal/scan-result.json` |
+| `add-paraids.py` | 为 .docx 的所有段落添加 `w14:paraId` 属性，供 docx-mcp 使用 | `python {SKILL_DIR}/scripts/add-paraids.py original/合同.docx` |
+
+`add-paraids.py` 在修订阶段前运行一次。docx-mcp 依赖 `w14:paraId` 定位段落——旧版 Word 生成的文档可能缺失此属性，不预处理将导致 search/replace 全部失败。
 
 ## 工具注入参考
 
@@ -159,20 +163,21 @@ python {SKILL_DIR}/scan-structure.py contract.md _internal/scan-result.json
 
 | Task Agent 类型 | 注入工具及主要用法 |
 |-----------------|-------------------|
-| Structure（T-S01） | `safe-docx` — `read` 读取原文。固定定义，直接注入 `agent/task-structure.md` |
-| Conditions（T-S02） | `safe-docx` — `read` 读取原文 |
-| Cross-References（T-S03） | `safe-docx` — `read` 读取原文 |
+| Structure（T-S01） | 无工具，纯 Markdown 文本处理。固定定义，直接注入 `agent/task-structure.md` |
+| Conditions（T-S02） | 无工具，纯 Markdown 文本处理 |
+| Cross-References（T-S03） | 无工具，纯 Markdown 文本处理 |
 | Audit（T-001 等） | `yd-law`（法律检索）、`qcc`（工商查询） |
-| Revision（T-002/T-REV） | `safe-docx` — `read` 获取段落 ID，然后在一个命令中用 `--and` 串联 `replace`+`comment`+`save --mode tracked`（MCP session 不跨进程） |
+| Translation（T-TRN） | 无工具，纯文本处理。将审核意见书翻译为结构化操作手册 revisions.json |
+| Revision（T-002/T-REV） | **`docx-mcp`**（MCP 原生，不需 Bash）。按 revisions.json 逐条在 .docx 上执行 search → delete → insert → comment |
 | Assembly（T-ASM） | 无工具，纯 Markdown 文本合并。固定定义，直接注入 `agent/task-assembly.md` |
 | Preliminary Report（T-PR） | 无工具，纯 Markdown 文本综合。固定定义，直接注入 `agent/task-preliminary-report.md` |
-| Format（T-FMT） | `safe-docx` — `comment`/`save`（批注与最终输出）；`pandoc`（从 Markdown 生成 docx，以原合同为 reference-doc） |
+| Format（T-FMT） | `pandoc`（从 Markdown 生成 docx，以原合同为 `--reference-doc` 继承样式） |
 
 | 调用者 | 注入工具 |
 |--------|---------|
-| Reviewer Phase 1 | `safe-docx` — `read`（抽查核验原文） |
-| Reviewer Phase 2 | `safe-docx` — `read`（抽查核验原文） |
-| Architect | `char-count`（bootstrap 阶段判断复杂度） |
+| Reviewer Phase 1 | 无工具（直接读取初设文档进行审查） |
+| Reviewer Phase 2 | 无工具（直接读取 Task Agent 产出进行审查） |
+| Architect | `char-count.sh`（bootstrap）、`scan-structure.py`（复杂模式预扫描）、`add-paraids.py`（修订前预处理） |
 
 ## 合同类型判断与规则匹配
 
