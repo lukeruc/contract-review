@@ -182,7 +182,7 @@ contract-review/
 │   ├── md-converter/
 │   ├── yd-law/
 │   └── qcc/
-├── doc/                          # 设计文档
+├── docs/                          # 设计文档
 │   ├── DESIGN.md                 # 概念设计
 │   ├── TECHNICAL-DESIGN.md       # 技术设计
 │   └── RULE-BUILDER-DESIGN.md    # Rule-builder 设计

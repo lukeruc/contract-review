@@ -25,12 +25,9 @@
 
 | 文档 | 内容 | 状态 |
 |------|------|------|
-| `doc/DESIGN.md` | contract-review 概念设计。EPC 三层模式、工作产品、决策上报、Reviewer 定位 | 已迭代稳定 |
-| `doc/TECHNICAL-DESIGN.md` | contract-review 技术设计。目录约定、Schema、工具清单、双模式流程、Reviewer 生命周期 | 已迭代稳定 |
-| `doc/RULE-BUILDER-DESIGN.md` | rule-builder 完整设计。Architect+Task Agent 两层、初设阶段、问题生成引擎、Skill 文件结构 | v0.1 已完成 |
-| `doc/PROJECT-STATUS.md` | 面向非技术领导的汇报文档。两个 skill 的工作原理和开发状态 | 定期更新 |
-| `doc/DISCUSSION.md` | 活跃讨论记录。当前话题：结构化耗时优化（scan-structure.py）、英文合同适配 | 动态更新 |
-| `doc/workflow.html` | 可视化流程图。两个 skill 完整流程和架构展示 | 随设计同步更新 |
+| `docs/DESIGN.md` | contract-review 概念设计。EPC 三层模式、工作产品、决策上报、Reviewer 定位 | 已迭代稳定 |
+| `docs/TECHNICAL-DESIGN.md` | contract-review 技术设计。目录约定、Schema、工具清单、双模式流程、Reviewer 生命周期 | 已迭代稳定 |
+| `docs/RULE-BUILDER-DESIGN.md` | rule-builder 完整设计。Architect+Task Agent 两层、初设阶段、问题生成引擎、Skill 文件结构 | v0.1 已完成 |
 
 概念设计定义"为什么"，技术设计定义"怎么做"。开发前务必查阅对应文档。
 
@@ -57,7 +54,7 @@
 skills/contract/
 ├── CLAUDE.md                         # 本文件
 ├── README.md                         # GitHub README
-├── doc/                              # 设计文档（非运行时）
+├── docs/                              # 设计文档（非运行时）
 │   ├── DESIGN.md
 │   ├── TECHNICAL-DESIGN.md
 │   ├── RULE-BUILDER-DESIGN.md

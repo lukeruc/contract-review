@@ -16,7 +16,7 @@ __pycache__/
 *.swo
 
 # Doc — only design files are versioned
-doc/*
-!doc/DESIGN.md
-!doc/TECHNICAL-DESIGN.md
-!doc/RULE-BUILDER-DESIGN.md
+docs/*
+!docs/DESIGN.md
+!docs/TECHNICAL-DESIGN.md
+!docs/RULE-BUILDER-DESIGN.md
