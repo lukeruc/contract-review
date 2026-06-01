@@ -9,7 +9,7 @@
 
 两个模块的关系：rule-builder 产出审核规则存入 `rules/`，contract-review 加载规则执行审核。
 
-核心架构是 EPC 三层模式（Architect - Task Agent - Reviewer），灵感来自工程总承包管理。按合同字符数建议处理模式（阈值 10000），用户最终确认。
+核心架构为三层委托模型（Architect - Task Agent - Reviewer）。按合同字符数建议处理模式（阈值 10000），用户最终确认。
 
 ## 角色体系
 
@@ -25,7 +25,7 @@
 
 | 文档 | 内容 | 状态 |
 |------|------|------|
-| `docs/DESIGN.md` | contract-review 概念设计。EPC 三层模式、工作产品、决策上报、Reviewer 定位 | 已迭代稳定 |
+| `docs/DESIGN.md` | contract-review 概念设计。三层委托模型、工作产品、决策上报、Reviewer 定位 | 已迭代稳定 |
 | `docs/TECHNICAL-DESIGN.md` | contract-review 技术设计。目录约定、Schema、工具清单、双模式流程、Reviewer 生命周期 | 已迭代稳定 |
 | `docs/RULE-BUILDER-DESIGN.md` | rule-builder 完整设计。Architect+Task Agent 两层、初设阶段、问题生成引擎、Skill 文件结构 | v0.1 已完成 |
 
@@ -35,18 +35,19 @@
 
 | 模块 | 核心设计 | 代码 | 测试 |
 |------|---------|------|------|
-| contract-review | 已完成 | 已完成 | 实测中，优化处理速度 |
-| rule-builder | 已完成 | v0.1 已完成 | 实测中 |
-| 底层工具 | 已完成 | 已完成 | 已通过测试 |
-| 审核规则库 | — | 示例文件 | 待律师编写 |
+| contract-review | v1.0 完成 | v1.0 完成 | 实测中 |
+| rule-builder | v0.1 完成 | v0.1 完成 | 实测中 |
+| agentdocx (Word 编辑) | v0.1 | 已发布 | 独立 MCP server，MIT 开源 |
+| 审核规则库 | — | 2 个示例 | 待律师扩充 |
 
 已完成的主要工作：
-- 完整的 EPC 三层架构设计
-- contract-review 双模式流程（简单 + 复杂 7 阶段）
+- 三层委托架构设计与实现
+- contract-review 双模式流程（简单 + 复杂）
 - rule-builder 5 Agent 固定定义 + 初设阶段
-- agentdocx 替代 revise.py，MCP 原生修订标记支持，eliminate OOXML 手工构造风险
+- 修订阶段：Translation Agent（审核意见→操作手册）+ Revision Agent（agentdocx MCP 批量执行）
 - scan-structure.py 预扫描脚本，消除 Structure Agent 第一遍通读
 - 底层工具：mdconverter、agentdocx、yd-law、qcc
+- MIT 开源
 
 ## 开发路径结构
 
@@ -57,10 +58,7 @@ skills/contract/
 ├── docs/                              # 设计文档（非运行时）
 │   ├── DESIGN.md
 │   ├── TECHNICAL-DESIGN.md
-│   ├── RULE-BUILDER-DESIGN.md
-│   ├── PROJECT-STATUS.md
-│   ├── DISCUSSION.md
-│   └── workflow.html
+│   └── RULE-BUILDER-DESIGN.md
 ├── contract-review/                  # 合同审核 skill
 │   ├── SKILL.md                      # 入口
 │   ├── scripts/                         # 本地脚本（Bash/Python）
@@ -72,7 +70,7 @@ skills/contract/
 │   │   └── task-assembly.md          # T-ASM 审核意见汇编
 │   ├── workflows/                    # 流程定义
 │   │   ├── simple.md                 # 简单模式（≤10000）
-│   │   └── complex.md                # 复杂模式（EPC 全机制）
+│   │   └── complex.md                # 复杂模式（全机制）
 │   ├── rules/                        # 审核规则库（律师编写）
 │   │   ├── construction-contract.md
 │   │   └── nda.md
@@ -122,7 +120,7 @@ Bootstrap（格式转化 → 字符数 → 立场/模式/修订人确认）
     │     4. Revision Agent 用 agentdocx 执行修订
     │     5. 交付 + 对话续接
     │
-    └── 复杂模式（EPC 全机制）
+    └── 复杂模式（全机制）
           阶段 1：初步设计
             ├── scan-structure.py 预扫描
             ├── T-S01 Structure → Reviewer 索引表核查
@@ -215,6 +213,6 @@ Bootstrap（格式转化 → 立场确认）
 1. **跨产品一致性审查 Agent** — 复杂模式下两个 Audit Agent 各自自洽但放一起可能存在语义矛盾。留待后续设计。
 2. **共享上下文更新后已有批准产物的有效性** — Architect 更新 shared-context 后，此前基于旧上下文批准的产出是否仍然有效。留待后续设计。
 3. **结构化并行章节处理** — 当前为单 Agent 处理 + scan-structure.py 预扫描。超大型合同的并行章节结构化方案已讨论（DISCUSSION.md），未实现。
-4. **规则库扩展** — 当前仅有一个示例规则文件。需要通过 rule-builder 或律师手工编写扩充。
+4. **规则库扩展** — 当前仅有施工合同和 NDA 两个示例规则文件。需要通过 rule-builder 或律师手工编写扩充。
 
 这些是已识别的技术债务，不阻塞当前工作。
