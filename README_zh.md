@@ -42,14 +42,14 @@ Bootstrap（格式转化 → 字符数统计 → 确认立场和模式）
     │     1. 合同类型判断 + 规则匹配
     │     2. Audit Agent 全合同审查
     │     3. Translation Agent 将审核意见转为操作手册 (revisions.json)
-    │     4. Revision Agent 用 docx-mcp 执行修订（修订标记 + 批注）
+    │     4. Revision Agent 用 agentdocx 执行修订（修订标记 + 批注）
     │     5. 交付：audit-opinion.md + revised.docx
     │
     └── 复杂模式（全机制）
           阶段 1：初步设计（结构化 → 商业条件提取 → 交叉引用分析）
           阶段 2：多 Audit Agent 并行详细审查 + Reviewer 质量审查
           阶段 3：汇编——合并多份审计产出为统一审核意见书
-          阶段 4：Translation Agent → Revision Agent (docx-mcp) 修订
+          阶段 4：Translation Agent → Revision Agent (agentdocx) 修订
           阶段 5：格式输出 + 交付
 ```
 
@@ -85,12 +85,12 @@ cd contract-review
 pip install -r tools/requirements.txt
 ```
 
-### 第三步：安装 docx-mcp MCP 服务器
+### 第三步：安装 agentdocx MCP 服务器
 
-docx-mcp 负责 Word 文档的修订标记、批注和段落插入。**必须安装。**
+agentdocx 负责 Word 文档的修订标记、批注和段落插入。段落按整数索引定位，无需预处理。**必须安装。**
 
 ```bash
-claude mcp add docx-mcp -- uvx docx-mcp-server
+claude mcp add agentdocx -- uvx agentdocx
 ```
 
 如果 `claude mcp` 命令不可用，手动添加到 Claude Code 的 MCP 配置文件（`~/.claude/settings.json`）：
@@ -98,15 +98,15 @@ claude mcp add docx-mcp -- uvx docx-mcp-server
 ```json
 {
   "mcpServers": {
-    "docx-mcp": {
+    "agentdocx": {
       "command": "uvx",
-      "args": ["docx-mcp-server"]
+      "args": ["agentdocx"]
     }
   }
 }
 ```
 
-首次启动 MCP 服务器时会自动安装 `docx-mcp` skill，提供使用指引。
+首次启动 MCP 服务器时会自动安装 `agentdocx` skill，提供使用指引。
 
 ### 第四步：安装工具 skill
 
@@ -152,7 +152,7 @@ claude skill add rule-builder --path rule-builder
 在 Claude Code 中输入 `/contract-review`，系统应提示上传合同文件。如果没有反应：
 
 1. 检查 skill 路径：`ls ~/.claude/skills/contract-review/SKILL.md`
-2. 检查 MCP 服务器：`claude mcp list` 应包含 `docx-mcp`
+2. 检查 MCP 服务器：`claude mcp list` 应包含 `agentdocx`
 3. 检查 pandoc：`pandoc --version`
 4. 检查 Python 依赖：`python -c "import docx, lxml, pymupdf4llm"`
 
@@ -163,8 +163,7 @@ contract-review/
 ├── SKILL.md                      # 合同审核 skill 入口
 ├── scripts/                      # 本地脚本（Architect 执行）
 │   ├── char-count.sh             # 字符数统计
-│   ├── scan-structure.py         # 编号体系机械扫描（中英文）
-│   └── add-paraids.py            # 为 .docx 添加 w14:paraId（docx-mcp 兼容）
+│   └── scan-structure.py         # 编号体系机械扫描（中英文）
 ├── agent/                        # 固定 Agent 定义（强制模板）
 │   ├── task-structure.md         # T-S01 结构化
 │   ├── task-preliminary-report.md# T-PR 初步情况报告
@@ -217,11 +216,7 @@ contract-review/
 
 **Q: 修订后的 .docx 打不开**
 
-通常是 docx-mcp 未正确安装。运行 `claude mcp list` 检查是否包含 `docx-mcp`。
-
-**Q: 修订时提示找不到段落**
-
-你的 .docx 文件缺少 `w14:paraId` 属性（旧版 Word 保存的常见问题）。系统会用 `add-paraids.py` 自动预处理，不需要手动操作。
+通常是 agentdocx 未正确安装。运行 `claude mcp list` 检查是否包含 `agentdocx`。
 
 **Q: 审核结果不准确**
 

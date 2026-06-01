@@ -42,14 +42,14 @@ Bootstrap (convert format → character count → confirm stance/mode)
     │     1. Contract type identification + rule matching
     │     2. Audit Agent reviews entire contract
     │     3. Translation Agent converts audit opinion → revisions.json (operation manual)
-    │     4. Revision Agent applies changes via docx-mcp (tracked changes + comments)
+    │     4. Revision Agent applies changes via agentdocx (tracked changes + comments)
     │     5. Deliver: audit-opinion.md + revised.docx
     │
     └── Complex mode (full mechanism)
           Phase 1: Preliminary design (structure → commercial conditions → cross-references)
           Phase 2: Multiple Audit Agents in parallel + Reviewer quality checks
           Phase 3: Assembly — merge audit outputs into a single opinion
-          Phase 4: Translation Agent → Revision Agent (docx-mcp)
+          Phase 4: Translation Agent → Revision Agent (agentdocx)
           Phase 5: Format + deliver
 ```
 
@@ -85,12 +85,12 @@ cd contract-review
 pip install -r tools/requirements.txt
 ```
 
-### Step 3: Install docx-mcp MCP server
+### Step 3: Install agentdocx MCP server
 
-docx-mcp handles Word document editing with tracked changes, comments, and paragraph insertion. **Required.**
+agentdocx handles Word document editing with tracked changes, comments, and paragraph insertion. Paragraphs are addressed by integer index — no pre-processing required. **Required.**
 
 ```bash
-claude mcp add docx-mcp -- uvx docx-mcp-server
+claude mcp add agentdocx -- uvx agentdocx
 ```
 
 If the `claude mcp` command is unavailable, manually add to your Claude Code MCP config (`~/.claude/settings.json`):
@@ -98,15 +98,15 @@ If the `claude mcp` command is unavailable, manually add to your Claude Code MCP
 ```json
 {
   "mcpServers": {
-    "docx-mcp": {
+    "agentdocx": {
       "command": "uvx",
-      "args": ["docx-mcp-server"]
+      "args": ["agentdocx"]
     }
   }
 }
 ```
 
-A `docx-mcp` skill auto-installs on first server start, providing usage guidance.
+A `agentdocx` skill auto-installs on first server start, providing usage guidance.
 
 ### Step 4: Install tool skills
 
@@ -152,7 +152,7 @@ claude skill add rule-builder --path rule-builder
 In Claude Code, type `/contract-review`. It should prompt you to upload a contract file. If nothing happens:
 
 1. Check skill path: `ls ~/.claude/skills/contract-review/SKILL.md`
-2. Check MCP server: `claude mcp list` should include `docx-mcp`
+2. Check MCP server: `claude mcp list` should include `agentdocx`
 3. Check pandoc: `pandoc --version`
 4. Check Python deps: `python -c "import docx, lxml, pymupdf4llm"`
 
@@ -163,8 +163,7 @@ contract-review/
 ├── SKILL.md                      # Contract review skill entry
 ├── scripts/                      # Local scripts (run by Architect)
 │   ├── char-count.sh             # Character count
-│   ├── scan-structure.py         # Clause numbering scanner (Chinese/English)
-│   └── add-paraids.py            # Add w14:paraId attributes for docx-mcp
+│   └── scan-structure.py         # Clause numbering scanner (Chinese/English)
 ├── agent/                        # Fixed Agent definitions (mandatory templates)
 │   ├── task-structure.md         # T-S01: structural analysis
 │   ├── task-preliminary-report.md# T-PR: preliminary report
@@ -217,11 +216,7 @@ The system works without external APIs — legal search and company lookup are e
 
 **Q: The revised .docx won't open in Office**
 
-Usually means docx-mcp isn't installed correctly. Run `claude mcp list` and verify `docx-mcp` appears.
-
-**Q: Revision agent can't find paragraphs**
-
-Your .docx likely lacks `w14:paraId` attributes (common with older Word versions). The system auto-runs `add-paraids.py` to fix this — no manual action needed.
+Usually means agentdocx isn't installed correctly. Run `claude mcp list` and verify `agentdocx` appears.
 
 **Q: Audit results seem off**
 

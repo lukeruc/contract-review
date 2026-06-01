@@ -141,7 +141,7 @@ bash {SKILL_DIR}/scripts/char-count.sh contract.md
 | Skill 名称 | 用途 | 调用者 |
 |-----------|------|--------|
 | `mdconverter` | .docx/.pdf/图片 → Markdown | Architect（bootstrap 格式转化） |
-| `docx-mcp` | Word 文档编辑（MCP 原生，支持修订标记、批注、段落插入）。**要求文档有 `w14:paraId` 属性** | Revision Agent（修订阶段） |
+| `agentdocx` | Word 文档编辑（MCP 原生，支持修订标记、批注、段落插入）。段落按整数索引定位，无需预处理 | Revision Agent（修订阶段） |
 | `yd-law` | 法律数据库检索 | Task Agent（Audit） |
 | `qcc` | 企业工商信息查询 | Task Agent（Audit） |
 
@@ -153,9 +153,6 @@ bash {SKILL_DIR}/scripts/char-count.sh contract.md
 |------|------|------|
 | `char-count.sh` | 纯文本字符数统计 | `bash {SKILL_DIR}/scripts/char-count.sh contract.md` |
 | `scan-structure.py` | 中英文合同编号体系机械扫描，输出 JSON | `python {SKILL_DIR}/scripts/scan-structure.py contract.md _internal/scan-result.json` |
-| `add-paraids.py` | 为 .docx 的所有段落添加 `w14:paraId` 属性，供 docx-mcp 使用 | `python {SKILL_DIR}/scripts/add-paraids.py original/合同.docx` |
-
-`add-paraids.py` 在修订阶段前运行一次。docx-mcp 依赖 `w14:paraId` 定位段落——旧版 Word 生成的文档可能缺失此属性，不预处理将导致 search/replace 全部失败。
 
 ## 工具注入参考
 
@@ -168,7 +165,7 @@ bash {SKILL_DIR}/scripts/char-count.sh contract.md
 | Cross-References（T-S03） | 无工具，纯 Markdown 文本处理 |
 | Audit（T-001 等） | `yd-law`（法律检索）、`qcc`（工商查询） |
 | Translation（T-TRN） | 无工具，纯文本处理。将审核意见书翻译为结构化操作手册 revisions.json |
-| Revision（T-002/T-REV） | **`docx-mcp`**（MCP 原生，不需 Bash）。按 revisions.json 逐条在 .docx 上执行 search → delete → insert → comment |
+| Revision（T-002/T-REV） | **`agentdocx`**（MCP 原生，不需 Bash）。`docx_open` → `docx_search` 定位段落 → `docx_batch` 一次执行全部修改，语义 `find` 模式无需手动计算偏移量 |
 | Assembly（T-ASM） | 无工具，纯 Markdown 文本合并。固定定义，直接注入 `agent/task-assembly.md` |
 | Preliminary Report（T-PR） | 无工具，纯 Markdown 文本综合。固定定义，直接注入 `agent/task-preliminary-report.md` |
 | Format（T-FMT） | `pandoc`（从 Markdown 生成 docx，以原合同为 `--reference-doc` 继承样式） |
@@ -177,7 +174,7 @@ bash {SKILL_DIR}/scripts/char-count.sh contract.md
 |--------|---------|
 | Reviewer Phase 1 | 无工具（直接读取初设文档进行审查） |
 | Reviewer Phase 2 | 无工具（直接读取 Task Agent 产出进行审查） |
-| Architect | `char-count.sh`（bootstrap）、`scan-structure.py`（复杂模式预扫描）、`add-paraids.py`（修订前预处理） |
+| Architect | `char-count.sh`（bootstrap）、`scan-structure.py`（复杂模式预扫描） |
 
 ## 合同类型判断与规则匹配
 

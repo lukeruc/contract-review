@@ -44,9 +44,9 @@
 - 完整的 EPC 三层架构设计
 - contract-review 双模式流程（简单 + 复杂 7 阶段）
 - rule-builder 5 Agent 固定定义 + 初设阶段
-- docx-mcp 替代 revise.py，MCP 原生修订标记支持，eliminate OOXML 手工构造风险
+- agentdocx 替代 revise.py，MCP 原生修订标记支持，eliminate OOXML 手工构造风险
 - scan-structure.py 预扫描脚本，消除 Structure Agent 第一遍通读
-- 底层工具：mdconverter、docx-mcp、yd-law、qcc
+- 底层工具：mdconverter、agentdocx、yd-law、qcc
 
 ## 开发路径结构
 
@@ -65,8 +65,7 @@ skills/contract/
 │   ├── SKILL.md                      # 入口
 │   ├── scripts/                         # 本地脚本（Bash/Python）
 │   │   ├── char-count.sh
-│   │   ├── scan-structure.py
-│   │   └── add-paraids.py
+│   │   └── scan-structure.py
 │   ├── agent/                        # 固定 Agent 定义（强制模板）
 │   │   ├── task-structure.md         # T-S01 结构化
 │   │   ├── task-preliminary-report.md# T-PR 初步情况报告
@@ -120,7 +119,7 @@ Bootstrap（格式转化 → 字符数 → 立场/模式/修订人确认）
     │     1. 合同类型判断 + 规则匹配
     │     2. Audit Agent 审查全合同 → Architect 验收
     │     3. Translation Agent 产出 revisions.json（操作手册）
-    │     4. Revision Agent 用 docx-mcp 执行修订
+    │     4. Revision Agent 用 agentdocx 执行修订
     │     5. 交付 + 对话续接
     │
     └── 复杂模式（EPC 全机制）
@@ -132,7 +131,7 @@ Bootstrap（格式转化 → 字符数 → 立场/模式/修订人确认）
           阶段 1.5：初设后确认（用户可选暂停）
           阶段 2：多 Audit Agent 并行审查 → Reviewer Phase 2
           阶段 3：Assembly 汇编（分层合并）
-          阶段 4：Translation Agent 产出 revisions.json → Revision Agent 用 docx-mcp 修订
+          阶段 4：Translation Agent 产出 revisions.json → Revision Agent 用 agentdocx 修订
           阶段 5：格式输出
           阶段 6：交付
           阶段 7：对话续接 + 审核工作报告
@@ -178,9 +177,9 @@ Bootstrap（格式转化 → 立场确认）
 15. **Assembly 分层合并**：审计产出总字符 ≤10 万单次合并，>10 万分组合并 + Reviewer 抽样检查忠实性。
 16. **修订合同 .docx 每处修订附批注**（1-2 句修改原因）。
 17. **修订人姓名在 bootstrap 确认**，默认"审核方"。
-18. **修订阶段分两步：翻译 → 修订**。Translation Agent（T-TRN）将审核意见书（说理报告）转换为结构化操作手册 revisions.json。Revision Agent（T-REV）使用 docx-mcp 按操作手册逐条在 .docx 上执行修订。翻译和修订的职责分离，各 Agent 上下文可控。
-19. **Revision Agent 使用 docx-mcp 原生 MCP 工具**，不需 Bash。解决了 sub-agent Bash 权限问题，且修订标记由成熟库保证 OOXML 正确性，避免手工构造 XML 的不可靠性。
-20. **修订前须预处理 paraId**。docx-mcp 依赖 `w14:paraId` 定位段落——旧版 Word 生成的 .docx 可能缺失此属性。Architect 在修订阶段前用 `add-paraids.py` 原地补充。
+18. **修订阶段分两步：翻译 → 修订**。Translation Agent（T-TRN）将审核意见书（说理报告）转换为结构化操作手册 revisions.json。Revision Agent（T-REV）使用 agentdocx 按操作手册逐条在 .docx 上执行修订。翻译和修订的职责分离，各 Agent 上下文可控。
+19. **Revision Agent 使用 agentdocx 原生 MCP 工具**，不需 Bash。解决了 sub-agent Bash 权限问题，且修订标记由成熟库保证 OOXML 正确性，避免手工构造 XML 的不可靠性。
+20. **agentdocx 按整数索引定位段落，无需预处理**。`paragraph_index`（0-based）与文档格式无关，任何 .docx 开箱可用。`docx_batch` 一次调用执行所有修改，语义 `find` 模式自动解析文本位置。
 21. **复杂模式初设后默认暂停等待用户确认**（用户可选自动继续）。
 22. **交付后创建 agent/ 目录**（CLAUDE.md + index.md），支持对话续接。
 
@@ -200,7 +199,7 @@ Bootstrap（格式转化 → 立场确认）
 | Skill 名称 | 类型 | 功能 | 调用者 |
 |-----------|------|------|--------|
 | `mdconverter` | 文档转换 | .docx/.pdf/图片 → Markdown。文本 PDF 用 pymupdf4llm，扫描版用 Dashscope 视觉 API，.docx 用 pandoc | Architect（bootstrap） |
-| `docx-mcp` | 文档编辑 | MCP 原生 Word 文档编辑。支持修订标记（`<w:del>`/`<w:ins>`）、批注、段落插入、脚注等。要求文档有 `w14:paraId` 属性（缺失时用 `add-paraids.py` 预处理）。Revision Agent 通过 MCP 工具直接操作，不需 Bash | Revision Agent（T-REV） |
+| `agentdocx` | 文档编辑 | MCP 原生 Word 文档编辑。支持修订标记（`<w:del>`/`<w:ins>`）、批注、段落插入。段落按整数索引定位，无需预处理。`docx_batch` 一次执行全部修改，语义 `find` 模式无需手动计算偏移量 | Revision Agent（T-REV） |
 | `yd-law` | 法律检索 | 法律数据库检索，8 个 API：案例/法规/法条的关键词与语义检索、详情查询 | Task Agent（Audit） |
 | `qcc` | 企业查询 | 企业工商信息查询，4 大类 67 个工具 | Task Agent（Audit） |
 
@@ -210,7 +209,6 @@ Bootstrap（格式转化 → 立场确认）
 |------|------|------|
 | `char-count.sh` | `contract-review/scripts/` | 纯文本字符数统计，用于 10000 字符阈值建议和汇编总量评估 |
 | `scan-structure.py` | `contract-review/scripts/` + `rule-builder/scripts/` | 中英文合同编号体系机械扫描，输出 JSON（条款编号、行号范围、层级、异常）。秒级完成，替代 Structure Agent 第一遍通读 |
-| `add-paraids.py` | `contract-review/scripts/` | 为 .docx 所有段落添加 `w14:paraId` 属性。docx-mcp 依赖此属性定位段落，旧版 Word 生成的文档可能缺失。Architect 在修订前执行 |
 
 ## 未决设计项
 
