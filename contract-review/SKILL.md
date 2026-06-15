@@ -46,7 +46,7 @@ cd "${SESSION_DIR}"
 
 ### 3. 格式转化
 
-调用 `md-converter` skill 将 `original/{合同文件名}` 转为 Markdown，输出为会话根目录下的 `contract.md`。
+调用 `mdconverter` skill 将 `original/{合同文件名}` 转为 Markdown，输出为会话根目录下的 `contract.md`。
 
 ### 4. 获取字符数
 

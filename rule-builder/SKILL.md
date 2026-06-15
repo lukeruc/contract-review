@@ -38,7 +38,7 @@ cd "${SESSION_DIR}"
 
 ### 3. 格式转化
 
-调用 `md-converter` skill 将 `original/{模板文件名}` 转为 Markdown，输出为会话根目录下的 `template.md`。
+调用 `mdconverter` skill 将 `original/{模板文件名}` 转为 Markdown，输出为会话根目录下的 `template.md`。
 
 ### 4. 审核立场确认
 
@@ -104,44 +104,75 @@ T-RB-S02 和 T-RB-S03 依赖 T-RB-S01 的条款编号体系作为定位基准，
 
 **验收**：Conditions 是否覆盖了主要商务条款、Cross-References 是否识别了关键引用链。不通过则退回修订。
 
-## 阶段 2：问题清单生成
+## 阶段 2：交互式问答
+
+T-RB-S04 产出的 `output/checklist.md` 是中间产物，不是给用户手动编辑的文件。Architect 通过对话与用户逐组完成问答，agent 负责将用户回答写入 checklist.md。
+
+### 2.1 生成问题清单
 
 创建 Question Generation Task Agent（T-RB-S04），将 `agent/task-question-gen.md` 中的 System Prompt 直接注入，将 Task Spec 作为任务下达。
 
 **注入工具**：无（结构化全文为 .md 文件，直接读取）
 
 **注入文件**：
-- `_internal/template-conditions.md` —— 商业安排结构报告
-- `_internal/template-crossref.md` —— 交叉引用分析报告
-- `_internal/template-structured.md` 的结构索引表部分 —— 条款定位地图
+- `_internal/template-conditions.md` — 商业安排结构报告
+- `_internal/template-crossref.md` — 交叉引用分析报告
+- `_internal/template-structured.md` 的结构索引表部分 — 条款定位地图
 - 审核立场记录
-
-> 结构化全文（`_internal/template-structured.md`）保留在磁盘上，Agent 在需要核实某条款的具体措辞时，通过索引表定位后直接读取该文件。不将全文注入上下文。
 
 **产出**：`output/checklist.md`
 
-**验收**：抽查清单是否覆盖了核心条款（如付款、违约、终止、管辖），问题是否带有明确的立场指向，是否体现了对模板商业逻辑和保护网的理解。不通过则退回修订。
+**验收**：抽查清单是否覆盖了核心条款，问题是否带有明确的立场指向。
 
-**告知用户**：
+### 2.2 分组提问
+
+读取 `output/checklist.md`，将问题按条款主题分组（如付款条款、违约责任、争议解决等），每组 3-5 个问题。在对话中逐组向用户提问：
 
 ```
-问题清单已生成：output/checklist.md
+第 1 组：付款条款（问题 1-4）
 
-清单共 {N} 个问题，涵盖：{维度列表}
+1. 预付款比例应不低于多少？
+2. 进度款支付节点如何设置？
+3. 质保金比例应不高于多少？
+4. 付款宽限期建议多少天？
 
-请逐条回答清单中的问题。你的回答将直接用于生成审核规则文件。
-回答完毕后通知我，我将生成规则文件。
+请逐条回答（可跳过不适用的），或对整组说明你的立场。
+```
+
+**节奏控制**：
+- 每轮只发一组，用户回答后再发下一组
+- 用户的一次回答可能同时覆盖多个问题——识别这种情况，填充所有相关条目
+- 用户说"这组都跳过"或"这几条按行业标准"时，标注 `[行业标准 — 待用户确认]`
+- 用户在回答某组时提到的信息，如果影响其他组的问题，主动标注关联
+
+### 2.3 写入回答
+
+每组回答完成后，Architect 将答案写入 `output/checklist.md` 中对应的问题条目。每轮更新后确认一组。用户随时可以说"前面第 X 条的答案改成……"来修订。
+
+### 2.4 完成确认
+
+全部问题组回答完毕后，汇总展示：
+
+```
+全部问题已回答。总结：
+- 共 {N} 个问题，已回答 {M} 个
+- 跳过 {K} 个（{原因}）
+- 按行业标准填充 {J} 个
+
+是否确认进入规则文件生成？确认后不可回退修改。
 ```
 
 ## 阶段 3：规则文件生成
 
-用户回答完清单并通知你后，创建 Rule Generation Task Agent（T-RB-S05），将 `agent/task-rule-gen.md` 中的 System Prompt 直接注入，将 Task Spec 作为任务下达。
+用户确认后，创建 Rule Generation Task Agent（T-RB-S05），将 `agent/task-rule-gen.md` 中的 System Prompt 直接注入，将 Task Spec 作为任务下达。
 
 **注入工具**：无（纯文本转换）
 
 **注入文件**：`output/checklist.md`（含用户答案）
 
 **产出**：`output/{规则文件名}.md`
+
+**规则文件命名约束**：文件名必须包含立场后缀，格式为 `{合同类型}-{立场}.md`（如 `construction-contractor.md`、`nda-disclose.md`）。写入前检测同名文件是否已存在——若存在且立场不同，提示用户调整文件名以避免覆盖。
 
 **验收**：检查检查项是否机械可判定（有具体数值/标准），是否遗漏了用户已回答的问题。
 
@@ -175,7 +206,7 @@ T-RB-S02 和 T-RB-S03 依赖 T-RB-S01 的条款编号体系作为定位基准，
 - **初步设计结论**：Structure 索引表概要（编/章/节分布、条款总数、编号异常）、Conditions 核心发现、Cross-References 关键引用链和保护网结构
 - **本次生成记录**：已采用的审核立场、已生成的规则文件名称
 - **文件索引指引**：告知新 Agent 去哪找完整信息——原始模板在 `../original/`，结构化文本在 `../_internal/`，初设文档在 `../_internal/`
-- **使用说明**：告知新 Agent"你的任务是基于已有初设产出，为新立场生成规则。不需要重新做格式转化和初步设计。直接确认新立场后，进入阶段 2（问题清单生成）"
+- **使用说明**：告知新 Agent"你的任务是基于已有初设产出，为新立场生成规则。不需要重新做格式转化和初步设计。直接确认新立场后，进入阶段 2（交互式问答）"
 - **Agent 自我认知**：声明"你不是重新分析模板的 Architect，你是基于已有初设产出为新立场生成规则的助手。所有格式处理和初步分析已完成，你的工作是确认新立场、生成该立场下的问题清单、转化为规则"
 
 **agent/index.md**：
@@ -198,7 +229,7 @@ T-RB-S02 和 T-RB-S03 依赖 T-RB-S01 的条款编号体系作为定位基准，
 - {模板文件名} —— 用户原始模板（只读）
 ```
 
-用户此后可在 `agent/` 路径下新开 Claude Code 实例，`CLAUDE.md` 自动加载，Agent 即刻进入可工作状态——跳过 Bootstrap 和阶段 1，直接从审核立场确认（新立场）→ 阶段 2（问题清单生成）开始。
+用户此后可在 `agent/` 路径下新开 Claude Code 实例，`CLAUDE.md` 自动加载，Agent 即刻进入可工作状态——跳过 Bootstrap 和阶段 1，直接从审核立场确认（新立场）→ 阶段 2（交互式问答）开始。
 
 ## 决策上报
 
@@ -206,14 +237,14 @@ T-RB-S02 和 T-RB-S03 依赖 T-RB-S01 的条款编号体系作为定位基准，
 
 - 用户提交非 .docx 格式文件（拒绝处理）
 - 审核立场未确认（必须确认）
-- md-converter 格式转化失败
+- mdconverter 格式转化失败
 - Task Agent 产出验收不通过且你已经无法通过调整指令修复
 
 ## 工具注入参考
 
 | 调用者 | 注入工具 |
 |--------|---------|
-| Bootstrap（步骤 3） | `md-converter` |
+| Bootstrap（步骤 3） | `mdconverter` |
 | Bootstrap（阶段 1 预扫描） | `scan-structure.py`（本地脚本，位于 `scripts/`） |
 | Structure（T-RB-S01） | 无工具，纯 Markdown 文本处理 |
 | Conditions（T-RB-S02） | 无工具，纯 Markdown 文本处理 |

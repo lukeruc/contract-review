@@ -28,38 +28,25 @@ _CN_NUM = {
 def cn2int(s: str) -> int:
     """Convert a Chinese numeral string to integer.  '三百二十五' -> 325."""
     s = s.strip()
-    # Handle pure digits mixed in: "第12条"
     if s.isdigit():
         return int(s)
 
-    result = 0
-    unit = 1  # current unit multiplier (万, 亿)
-    section = 0  # accumulated value within current unit group
-
-    for i, ch in enumerate(reversed(s)):
+    result, section, digit = 0, 0, 0
+    for ch in s:
         if ch not in _CN_NUM:
-            # Try as digit
             if ch.isdigit():
-                val = int(ch)
-                if section == 0:
-                    section = val
-                else:
-                    section += val * (10 ** (len(str(section))))
+                digit = int(ch)
             continue
-        val = _CN_NUM[ch]
-        if val >= 10000:
-            if section == 0:
-                section = 1
-            result += section * val
-            section = 0
-        elif val >= 10:
-            if section == 0:
-                section = 1
-            section *= val
+        v = _CN_NUM[ch]
+        if v >= 10000:                  # 万、亿
+            result = (result + section + digit) * v
+            section = digit = 0
+        elif v >= 10:                   # 十、百、千
+            section += (digit or 1) * v
+            digit = 0
         else:
-            section += val
-    result += section
-    return result
+            digit = v
+    return result + section + digit
 
 
 # ── Roman numeral conversion ────────────────────────────────────────────
@@ -136,8 +123,12 @@ _INLINE_CONTINUATION = {
     "a", "an", "no", "nor", "but", "if", "so", "yet",
 }
 
-# Attachment detection (both languages)
-RE_ATTACHMENT = re.compile(r"^\s*(附件|Appendix|Exhibit|Schedule|Annex)\s*", re.IGNORECASE)
+# Attachment detection (both languages) — standalone header lines only
+RE_ATTACHMENT = re.compile(
+    r"^\s*(附件[一二三四五六七八九十\d]*|Appendix\s+[IVXLCDM\d]+|"
+    r"Exhibit\s+[A-Z\d]+|Schedule\s+[A-Z\d]+|Annex\s+[A-Z\d]+)\s*[:：]?$",
+    re.IGNORECASE,
+)
 
 
 def normalize_article_num(raw: str, fmt: str) -> int:
@@ -199,8 +190,12 @@ def scan_structure(filepath: str) -> dict:
             continue
 
         if in_attachment:
-            # Once in attachment zone, stay until end
-            continue
+            # Exit attachment zone if article/clause numbering resumes
+            if (RE_CN_ARTICLE.match(stripped) or RE_EN_ARTICLE.match(stripped) or
+                RE_EN_SECTION.match(stripped) or RE_EN_CLAUSE.match(stripped)):
+                in_attachment = False
+            else:
+                continue
 
         if lang in ("zh", "bilingual"):
             # Chinese chapter detection
@@ -256,9 +251,6 @@ def scan_structure(filepath: str) -> dict:
             # Chinese article detection
             art_match = RE_CN_ARTICLE.match(stripped)
             if art_match:
-                # Check not inline reference
-                if RE_CN_INLINE_REF.match(stripped):
-                    continue
                 in_preamble = False
                 num_raw = art_match.group(1)
                 title = stripped[art_match.end():].strip()
@@ -417,15 +409,6 @@ def scan_structure(filepath: str) -> dict:
                             if ln not in preamble_lines:
                                 preamble_lines.append(ln)
                     preamble_lines.sort()
-                    if preamble_lines:
-                        p_text = " ".join(
-                            lines[ln - 1] for ln in preamble_lines
-                        ).strip()[:200]
-                        preamble_out = {
-                            "line_start": preamble_lines[0],
-                            "line_end": preamble_lines[-1],
-                            "preview": p_text,
-                        }
                     break
 
     # ── Set article line_end values ──
@@ -440,14 +423,6 @@ def scan_structure(filepath: str) -> dict:
                 art["line_end"] = len(lines)
 
     # ── Detect anomalies ──
-    # Group articles by chapter for per-chapter numbering detection
-    def article_sort_key(a):
-        """Sort key for articles: (chapter, numeric value)."""
-        ch = a.get("chapter_num_int") or 0
-        return (ch, a.get("num_int", 0), a.get("num_raw", ""))
-
-    articles.sort(key=article_sort_key)
-
     for i in range(len(articles) - 1):
         cur = articles[i]
         nxt = articles[i + 1]
